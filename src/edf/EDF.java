@@ -76,14 +76,21 @@ public class EDF {
 				IntVar countEqFor = model.intVar("count_eq_for_"+i+"_"+j, 0, 5, false);
 				IntVar countFormFor = model.intVar("count_form_for_"+i+"_"+j, 0, 5, false);
 				IntVar countSalleFor = model.intVar("count_salle_for_"+i+"_"+j, 0, 5, false);
-				model.count(formations[j], equipes[i], countEqFor);
-				model.count(formations[j], formateurs[i], countFormFor);
-				model.count(formations[j], salles[i], countSalleFor);
+				model.count(formations[j], equipes[i], countEqFor).post();
+				model.count(formations[j], formateurs[i], countFormFor).post();
+				model.count(formations[j], salles[i], countSalleFor).post();
 
-				model.arithm(countEqFor, "=", countFormFor);
-				model.arithm(countEqFor, "=", countSalleFor);
+				model.arithm(countEqFor, "=", countFormFor).post();
+				model.arithm(countEqFor, "=", countSalleFor).post();
 			}
 		}
+		
+	}
+	
+	public void go() {
+		solver.showSolutions(); 
+//		solver.findOptimalSolution(, true);
+		solver.printStatistics();
 		
 	}
 	
