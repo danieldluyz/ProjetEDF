@@ -12,6 +12,9 @@ import org.chocosolver.solver.variables.IntVar;
 
 public class EDF {
 	
+	private Model model;
+	private Solver solver;
+	
 	private static final int NB_EQUIPES = 2;
 	private static final int NB_FORMATEURS = 3;
 	private static final int NB_FORMATIONS = 3;
@@ -19,31 +22,68 @@ public class EDF {
 	private static final int NB_TRACES_JOUR = 5;
 	private static final int NB_JOURS = 1;
 	
-	private ArrayList<IntVar[]> equipes;
+	private IntVar[][] equipes;
 	
-	private ArrayList<IntVar[]> formateurs;
+	private IntVar[][] formateurs;
 	
-	private ArrayList<IntVar[]> salles;
+	private IntVar[][] salles;
+	
+	private int[] formations;
 	
 	public EDF() {
-		Model model = new Model();
-		Solver solver = model.getSolver();
+		model = new Model();
+		solver = model.getSolver();
 		
-		equipes = new ArrayList<IntVar[]>();
-		formateurs = new ArrayList<IntVar[]>();
-		salles = new ArrayList<IntVar[]>();
+		int tracesTot = NB_TRACES_JOUR * NB_JOURS;
 		
-		for (int i = 0; i < NB_EQUIPES; i++) {
-			IntVar[] equipe = model.intVarArray("E"+i, NB_TRACES_JOUR * NB_JOURS, 1, NB_FORMATIONS);
+		equipes = new IntVar[NB_EQUIPES][tracesTot];
+		formateurs = new IntVar[NB_FORMATEURS][tracesTot];
+		salles = new IntVar[NB_SALLES][tracesTot];
+		
+		for (int i = 0; i < equipes.length; i++) {
+			for (int j = 0; j < tracesTot; j++) {
+				//TO DO : Établir comme dommaine de chaque équipe seulement les formations dont chaque equipe a besoin
+				equipes[i][j] = model.intVar(1, NB_FORMATIONS);
+			}
 		}
 		
-		for (int i = 0; i < salles.size(); i++) {
-			IntVar var2 = model.intVar(2);
+		for (int i = 0; i < formateurs.length; i++) {
+			for (int j = 0; j < tracesTot; j++) {
+				//Si jamais on veut differencier les formateurs (c.a.d. qu'ils font des formations differentes), on change les valeurs du domaine et c'est tout
+				formateurs[i][j] = model.intVar(1, NB_FORMATIONS);
+			}
+		}
+		
+		for (int i = 0; i < salles.length; i++) {
+			for (int j = 0; j < tracesTot; j++) {
+				//Si jamais on veut differencier les salles (c.a.d. qu'elle n'est pas suffisament equipée pour une formation, on supprime cette formation du domaine
+				salles[i][j] = model.intVar(1, NB_FORMATIONS);
+			}
+		}
+		
+		formations = new int[NB_FORMATIONS];
+		for (int i = 0; i < NB_FORMATIONS; i++) {
+			formations[i] = i;
 		}
 		
 	}
 	
-	public void contraintes() {
+	public void constraintes() {
+		
+		for (int i = 0; i < equipes.length; i++) {
+			
+			for (int j = 0; j < formations.length; j++) {
+				IntVar countEqFor = model.intVar("count_eq_for_"+i+"_"+j, 0, 5, false);
+				IntVar countFormFor = model.intVar("count_form_for_"+i+"_"+j, 0, 5, false);
+				IntVar countSalleFor = model.intVar("count_salle_for_"+i+"_"+j, 0, 5, false);
+				model.count(formations[j], equipes[i], countEqFor);
+				model.count(formations[j], formateurs[i], countFormFor);
+				model.count(formations[j], salles[i], countSalleFor);
+
+				model.arithm(countEqFor, "=", countFormFor);
+				model.arithm(countEqFor, "=", countSalleFor);
+			}
+		}
 		
 	}
 	
