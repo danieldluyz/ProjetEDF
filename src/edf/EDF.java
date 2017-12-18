@@ -27,6 +27,8 @@ public class EDF {
 		
 		IntVar salle1 = model.intVar(1,NB_SALLES);
 		IntVar salle2 = model.intVar(1,NB_SALLES);
+		
+		
 	}
 	
 	public static void main(String[] args) {
