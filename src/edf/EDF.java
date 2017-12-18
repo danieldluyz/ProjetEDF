@@ -3,31 +3,47 @@ package edf;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.ArrayList;
 
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solver;
+import org.chocosolver.solver.constraints.Constraint;
 import org.chocosolver.solver.variables.IntVar;
 
 public class EDF {
 	
 	private static final int NB_EQUIPES = 2;
 	private static final int NB_FORMATEURS = 3;
+	private static final int NB_FORMATIONS = 3;
 	private static final int NB_SALLES = 2;
+	private static final int NB_TRACES_JOUR = 5;
+	private static final int NB_JOURS = 1;
+	
+	private ArrayList<IntVar[]> equipes;
+	
+	private ArrayList<IntVar[]> formateurs;
+	
+	private ArrayList<IntVar[]> salles;
 	
 	public EDF() {
 		Model model = new Model();
 		Solver solver = model.getSolver();
 		
-		IntVar equipe1 =  model.intVar(1,NB_FORMATEURS);
-		IntVar equipe2 = model.intVar(1,NB_FORMATEURS);
+		equipes = new ArrayList<IntVar[]>();
+		formateurs = new ArrayList<IntVar[]>();
+		salles = new ArrayList<IntVar[]>();
 		
-		IntVar formateur1 = model.intVar(1,NB_EQUIPES);
-		IntVar formateur2 = model.intVar(1,NB_EQUIPES);
-		IntVar formateur3 = model.intVar(1,NB_EQUIPES);
+		for (int i = 0; i < NB_EQUIPES; i++) {
+			IntVar[] equipe = model.intVarArray("E"+i, NB_TRACES_JOUR * NB_JOURS, 1, NB_FORMATIONS);
+		}
 		
-		IntVar salle1 = model.intVar(1,NB_SALLES);
-		IntVar salle2 = model.intVar(1,NB_SALLES);
+		for (int i = 0; i < salles.size(); i++) {
+			IntVar var2 = model.intVar(2);
+		}
 		
+	}
+	
+	public void contraintes() {
 		
 	}
 	
