@@ -43,21 +43,21 @@ public class EDF {
 		for (int i = 0; i < equipes.length; i++) {
 			for (int j = 0; j < tracesTot; j++) {
 				//TO DO : Établir comme dommaine de chaque équipe seulement les formations dont chaque equipe a besoin
-				equipes[i][j] = model.intVar(1, NB_FORMATIONS);
+				equipes[i][j] = model.intVar(-1, NB_FORMATIONS);
 			}
 		}
 		
 		for (int i = 0; i < formateurs.length; i++) {
 			for (int j = 0; j < tracesTot; j++) {
 				//Si jamais on veut differencier les formateurs (c.a.d. qu'ils font des formations differentes), on change les valeurs du domaine et c'est tout
-				formateurs[i][j] = model.intVar(1, NB_FORMATIONS);
+				formateurs[i][j] = model.intVar(-1, NB_FORMATIONS);
 			}
 		}
 		
 		for (int i = 0; i < salles.length; i++) {
 			for (int j = 0; j < tracesTot; j++) {
 				//Si jamais on veut differencier les salles (c.a.d. qu'elle n'est pas suffisament equipée pour une formation, on supprime cette formation du domaine
-				salles[i][j] = model.intVar(1, NB_FORMATIONS);
+				salles[i][j] = model.intVar(-1, NB_FORMATIONS);
 			}
 		}
 		
@@ -69,14 +69,13 @@ public class EDF {
 	}
 	
 	public void constraintes() {
-		
 		// Contrainte pour assurer que quand il y a une formation il y a bien une
 		// equipe, une salle et un formatteur
 		for (int i = 0; i < equipes.length; i++) {
 			for (int j = 0; j < formations.length; j++) {
-				IntVar countEqFor = model.intVar("count_eq_for_"+i+"_"+j, 0, 5, false);
-				IntVar countFormFor = model.intVar("count_form_for_"+i+"_"+j, 0, 5, false);
-				IntVar countSalleFor = model.intVar("count_salle_for_"+i+"_"+j, 0, 5, false);
+				IntVar countEqFor = model.intVar("count_eq_for_"+i+"_"+j, 0, 100, false);
+				IntVar countFormFor = model.intVar("count_form_for_"+i+"_"+j, 0, 100, false);
+				IntVar countSalleFor = model.intVar("count_salle_for_"+i+"_"+j, 0, 100, false);
 				
 				IntVar[] columnEquipe = getColumn(equipes, j);
 				IntVar[] columnFormateur = getColumn(formateurs, j);
