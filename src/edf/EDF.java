@@ -71,7 +71,7 @@ public class EDF {
 	public void constraintes() {
 		// Contrainte pour assurer que quand il y a une formation il y a bien une
 		// equipe, une salle et un formatteur
-		for (int i = 0; i < equipes.length; i++) {
+		for (int i = 0; i < equipes[i].length; i++) {
 			for (int j = 0; j < formations.length; j++) {
 				IntVar countEqFor = model.intVar("count_eq_for_"+i+"_"+j, 0, 100, false);
 				IntVar countFormFor = model.intVar("count_form_for_"+i+"_"+j, 0, 100, false);
