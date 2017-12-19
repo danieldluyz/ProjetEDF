@@ -73,9 +73,9 @@ public class EDF {
 		// equipe, une salle et un formatteur
 		for (int i = 0; i < equipes[i].length; i++) {
 			for (int j = 0; j < formations.length; j++) {
-				IntVar countEqFor = model.intVar("count_eq_for_"+i+"_"+j, 0, 5, false);
-				IntVar countFormFor = model.intVar("count_form_for_"+i+"_"+j, 0, 5, false);
-				IntVar countSalleFor = model.intVar("count_salle_for_"+i+"_"+j, 0, 5, false);
+				IntVar countEqFor = model.intVar("count_eq_for_"+i+"_"+j, 0, 100, false);
+				IntVar countFormFor = model.intVar("count_form_for_"+i+"_"+j, 0, 100, false);
+				IntVar countSalleFor = model.intVar("count_salle_for_"+i+"_"+j, 0, 100, false);
 				
 				IntVar[] columnEquipe = getColumn(equipes, j);
 				IntVar[] columnFormateur = getColumn(formateurs, j);
