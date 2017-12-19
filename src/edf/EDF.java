@@ -6,7 +6,6 @@ import java.io.FileReader;
 
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solver;
-import org.chocosolver.solver.constraints.Constraint;
 import org.chocosolver.solver.variables.IntVar;
 
 public class EDF {
@@ -36,8 +35,18 @@ public class EDF {
 	/** Le nombre de jours à planifier */
 	private static final int NB_JOURS = 3;
 	
-	/** La liste de formations */
-	private int[] formations;
+	/** Cette matrice comporte la liste de formations
+	 * La première colonne est l'id de la formation (un numéro)
+	 * La deuxième colonne est la durée en créneaux de la formation
+	 * La troisième colonne est le nombre max. de créneaux par jour de cette formation
+	**/
+	private double[][] formations;
+	
+	/** Les besoins de formations par equipes en terme de créneaux. 
+	 * Les lignes sont les equipes, les colonnes les formations et 
+	 * la valeur de la case le volume de créneaux dont l'équipe i a besoin pour la formation j 
+	**/
+	private double[][] formationsParEquipe;
 	
 	// VARIABLES DE DÉCISION :
 	
@@ -89,10 +98,12 @@ public class EDF {
 			}
 		}
 		
-		formations = new int[NB_FORMATIONS];
+		formations = new double[NB_FORMATIONS][3];
 		for (int i = 0; i < NB_FORMATIONS; i++) {
-			formations[i] = i;
+			formations[i][0] = i;
 		}
+		
+		formationsParEquipe = new double[NB_EQUIPES][NB_FORMATIONS];
 		
 	}
 	
@@ -139,8 +150,44 @@ public class EDF {
 		}
 	}
 	
+	public void lireBesoinsEquipes() {
+		
+		// Lecture des disponibilités des équipes
+		File file = new File("./data/BesoinsFormations.csv");
+		BufferedReader buf;
+		try {
+			buf = new BufferedReader(new FileReader(file));
+			String line = buf.readLine();
+			line = buf.readLine();
+			
+			double[][] besoinsEquipe = new double[NB_EQUIPES][NB_FORMATIONS];
+			int equipe = 0;
+			
+			while(line != null) {
+				String[] besoin = line.split(";");
+				
+				for (int i = 1; i < besoin.length; i++) {
+					String[] num = besoin[i].split(",");
+					
+					int a = Integer.parseInt(num[0].trim());
+					double b = Integer.parseInt(num[1].trim().substring(0, 1));
+					double c = a + b/10;
+					
+					besoinsEquipe[equipe][i] = c;
+				}
+				
+				System.out.println("");
+				
+				line = buf.readLine();
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	public void constraintes() {
-		// 1ère contrainte :
+		// Contrainte # 1 :
 		// Contrainte pour assurer que quand il y a une formation il y a bien une
 		// equipe, une salle et un formatteur
 		for (int i = 0; i < equipes[i].length; i++) {
@@ -153,20 +200,23 @@ public class EDF {
 				IntVar[] columnFormateur = getColumn(formateurs, j);
 				IntVar[] columnSalle = getColumn(salles, j);
 				
-				model.count(formations[j], columnEquipe, countEqFor).post();
-				model.count(formations[j], columnFormateur, countFormFor).post();
-				model.count(formations[j], columnSalle, countSalleFor).post();
+				model.count((int) formations[j][0], columnEquipe, countEqFor).post();
+				model.count((int) formations[j][0], columnFormateur, countFormFor).post();
+				model.count((int) formations[j][0], columnSalle, countSalleFor).post();
 
 				model.arithm(countEqFor, "=", countFormFor).post();
 				model.arithm(countEqFor, "=", countSalleFor).post();
 			}
 		}
+		
+		// Contrainte # 2 :
 		// Contrainte pour assurer que tous les equipes suivent toutes les formations 
 		for (int i = 0; i < equipes.length; i++) {
 			for (int j = 0; j < formations.length; j++) {
 				IntVar cFile=model.intVar("cFile_equipe: "+i, 0, 100, false);
-				model.count(formations[j], equipes[i], cFile).post();
-				model.arithm(cFile, ">=", 5).post(); //CHANGER
+				
+				model.count((int) formations[i][0], equipes[i], cFile).post();
+				model.arithm(cFile, ">=", (int) formationsParEquipe[i][j]).post(); // corriger
 			}
 		}
 	}
@@ -189,7 +239,7 @@ public class EDF {
 	
 	public static void main(String[] args) {
 		EDF edf = new EDF();
-		edf.lireDisponibilitesEquipes();
+		edf.lireBesoinsEquipes();
 	}
 
 }
