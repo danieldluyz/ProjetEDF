@@ -89,6 +89,14 @@ public class EDF {
 				model.arithm(countEqFor, "=", countSalleFor).post();
 			}
 		}
+		// Contrainte pour assurer que tous les equipes suivent toutes les formations 
+		for (int i = 0; i < equipes.length; i++) {
+			for (int j = 0; j < formations.length; j++) {
+				IntVar cFile=model.intVar("cFile_equipe: "+i, 0, 100, false);
+				model.count(formations[j], equipes[i], cFile).post();
+				model.arithm(cFile, ">=", 5).post(); //CHANGER
+			}
+		}
 	}
 	
 	public IntVar[] getColumn(IntVar[][] matrix, int j) {
