@@ -3,5 +3,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/Choco"/>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="E:/Henry D Saenz L/Documents/A3/OPTI combi/choco-4.0.6/choco-4.0.6/choco-solver-4.0.6-with-dependencies.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
