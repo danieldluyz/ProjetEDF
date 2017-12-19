@@ -70,28 +70,43 @@ public class EDF {
 	
 	public void constraintes() {
 		
+		// Contrainte pour assurer que quand il y a une formation il y a bien une
+		// equipe, une salle et un formatteur
 		for (int i = 0; i < equipes.length; i++) {
 			
 			for (int j = 0; j < formations.length; j++) {
 				IntVar countEqFor = model.intVar("count_eq_for_"+i+"_"+j, 0, 5, false);
 				IntVar countFormFor = model.intVar("count_form_for_"+i+"_"+j, 0, 5, false);
 				IntVar countSalleFor = model.intVar("count_salle_for_"+i+"_"+j, 0, 5, false);
-				model.count(formations[j], equipes[i], countEqFor).post();
-				model.count(formations[j], formateurs[i], countFormFor).post();
-				model.count(formations[j], salles[i], countSalleFor).post();
+				
+				IntVar[] columnEquipe = getColumn(equipes, j);
+				IntVar[] columnFormateur = getColumn(formateurs, j);
+				IntVar[] columnSalle = getColumn(salles, j);
+				
+				model.count(formations[j], columnEquipe, countEqFor).post();
+				model.count(formations[j], columnFormateur, countFormFor).post();
+				model.count(formations[j], columnSalle, countSalleFor).post();
 
 				model.arithm(countEqFor, "=", countFormFor).post();
 				model.arithm(countEqFor, "=", countSalleFor).post();
 			}
 		}
+	}
+	
+	public IntVar[] getColumn(IntVar[][] matrix, int j) {
+		IntVar[] column = new IntVar[matrix[0].length];
 		
+		for (int i = 0; i < column.length; i++) {
+			column[i] = matrix[i][j];
+		}
+		
+		return column;
 	}
 	
 	public void go() {
 		solver.showSolutions(); 
 //		solver.findOptimalSolution(, true);
-		solver.printStatistics();
-		
+		solver.printStatistics();	
 	}
 	
 	public static void main(String[] args) {
