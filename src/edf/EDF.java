@@ -3,7 +3,6 @@ package edf;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.util.ArrayList;
 
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solver;
@@ -12,23 +11,52 @@ import org.chocosolver.solver.variables.IntVar;
 
 public class EDF {
 	
-	private Model model;
-	private Solver solver;
+	// CONSTANTES :
 	
-	private static final int NB_EQUIPES = 2;
+	/** La constante qui fait référence à l'indisponibilité d'une équipe/formateur/trace pendant une trace */
+	private static final int NO_DISPONIBLE = -1;
+	
+	// DONNÉES :
+	
+	/** Le nombre d'équipes */
+	private static final int NB_EQUIPES = 14;
+	
+	/** Le nombre de formateurs */
 	private static final int NB_FORMATEURS = 3;
-	private static final int NB_FORMATIONS = 3;
-	private static final int NB_SALLES = 2;
-	private static final int NB_TRACES_JOUR = 5;
-	private static final int NB_JOURS = 1;
 	
+	/** Le nombre de formations données par le centre */
+	private static final int NB_FORMATIONS = 3;
+	
+	/** Le numéro de salles */
+	private static final int NB_SALLES = 2;
+	
+	/** Le nombre de traces disponibles par jour */
+	private static final int NB_TRACES_JOUR = 5;
+	
+	/** Le nombre de jours à planifier */
+	private static final int NB_JOURS = 3;
+	
+	/** La liste de formations */
+	private int[] formations;
+	
+	// VARIABLES DE DÉCISION :
+	
+	/** Les variables du planning des équipe */
 	private IntVar[][] equipes;
 	
+	/** Les variables du planning des formatteurs */
 	private IntVar[][] formateurs;
 	
+	/** Les variables du planning des salles */
 	private IntVar[][] salles;
 	
-	private int[] formations;
+	// VARIABLES CHOCO
+	
+	/** Le model Choco */
+	private Model model;
+	
+	/** Le solver Choco */
+	private Solver solver;
 	
 	public EDF() {
 		model = new Model();
@@ -68,7 +96,51 @@ public class EDF {
 		
 	}
 	
+	public void lireDisponibilitesEquipes() {
+		
+		// Lecture des disponibilités des équipes
+		File file = new File("./data/DisposEquipes.csv");
+		BufferedReader buf;
+		try {
+			buf = new BufferedReader(new FileReader(file));
+			String line = buf.readLine();
+			line = buf.readLine();
+			
+			int equipe = 0;
+			
+			while(line != null) {
+				String[] team = line.split(";");
+				Integer[] teamAvailability = new Integer[team.length-1];
+				
+				// On trouve les dispos d'une équipe
+				for (int i = 0; i < team.length-1; i++) {
+					if(team[i+1].equals("J")) teamAvailability[i] = 1;
+					else {
+						teamAvailability[i] = 0;
+					}
+				}
+				
+				// Contrainte # 3 : Les indisponibilités sont fixées à la valeur de la constante "NO_DISPONIBLE"
+				if(equipe < NB_EQUIPES) {
+					for (int j = 0; j < NB_JOURS; j++) {
+						if(teamAvailability[j] == 0) {
+							for (int k = 0; k < NB_TRACES_JOUR; k++) {
+								model.arithm(equipes[equipe][j * NB_TRACES_JOUR + k], "=", NO_DISPONIBLE);
+							}
+						}
+					}
+				}
+				equipe++;
+				line = buf.readLine();
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	public void constraintes() {
+		// 1ère contrainte :
 		// Contrainte pour assurer que quand il y a une formation il y a bien une
 		// equipe, une salle et un formatteur
 		for (int i = 0; i < equipes[i].length; i++) {
@@ -108,31 +180,8 @@ public class EDF {
 	}
 	
 	public static void main(String[] args) {
-		File file = new File("./data/DisposEquipes.csv");
-		BufferedReader buf;
-		try {
-			
-			buf = new BufferedReader(new FileReader(file));
-			String line = buf.readLine();
-			line = buf.readLine();
-			while(line != null) {
-				String[] team = line.split(";");
-				Integer[] teamAvailability = new Integer[team.length-1];
-				for (int i = 0; i < team.length-1; i++) {
-					if(team[i+1].equals("J")) teamAvailability[i] = 1;
-					else teamAvailability[i] = 0;
-				}
-				for (int i = 0; i < teamAvailability.length; i++) {
-					System.out.print(teamAvailability[i]+";");
-				}
-				System.out.println("");
-				line = buf.readLine();
-			}
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
+		EDF edf = new EDF();
+		edf.lireDisponibilitesEquipes();
 	}
 
 }
