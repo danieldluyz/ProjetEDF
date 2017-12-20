@@ -24,7 +24,7 @@ public class EDF {
 	private static final int NB_FORMATEURS = 3;
 	
 	/** Le nombre de formations données par le centre */
-	private static final int NB_FORMATIONS = 3;
+	private static final int NB_FORMATIONS = 7;
 	
 	/** Le numéro de salles */
 	private static final int NB_SALLES = 2;
@@ -173,15 +173,38 @@ public class EDF {
 					double b = Integer.parseInt(num[1].trim().substring(0, 1));
 					double c = a + b/10;
 					
-					besoinsEquipe[equipe][i] = c;
+					besoinsEquipe[equipe][i-1] = c;
 				}
-				
-				System.out.println("");
-				
+				equipe++;
 				line = buf.readLine();
 			}
+			
+			// Nouveau fichier
+			file = new File("./data/FormationsInfos.csv");
+			buf = new BufferedReader(new FileReader(file));
+			line = buf.readLine();
+			line = buf.readLine();
+			line = buf.readLine();
+			while(line != null) {
+				String[] besoin = line.split(";");
+				
+				for (int i = 6; i <= 7; i++) {
+					/*
+					String[] num = besoin[i].split(",");
+					
+					int a = Integer.parseInt(num[0].trim());
+					double b = Integer.parseInt(num[1].trim().substring(0, 1));
+					double c = a + b/10;
+					
+					besoinsEquipe[equipe][i-1] = c;
+					*/
+					System.out.print(besoin[i]+";");
+				}
+				System.out.println("");
+				line = buf.readLine();
+			}
+			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -196,9 +219,9 @@ public class EDF {
 				IntVar countFormFor = model.intVar("count_form_for_"+i+"_"+j, 0, 100, false);
 				IntVar countSalleFor = model.intVar("count_salle_for_"+i+"_"+j, 0, 100, false);
 				
-				IntVar[] columnEquipe = getColumn(equipes, j);
-				IntVar[] columnFormateur = getColumn(formateurs, j);
-				IntVar[] columnSalle = getColumn(salles, j);
+				IntVar[] columnEquipe = getColumn(equipes, i);
+				IntVar[] columnFormateur = getColumn(formateurs, i);
+				IntVar[] columnSalle = getColumn(salles, i);
 				
 				model.count((int) formations[j][0], columnEquipe, countEqFor).post();
 				model.count((int) formations[j][0], columnFormateur, countFormFor).post();
