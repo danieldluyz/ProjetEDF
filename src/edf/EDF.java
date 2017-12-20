@@ -79,7 +79,6 @@ public class EDF {
 		
 		for (int i = 0; i < equipes.length; i++) {
 			for (int j = 0; j < tracesTot; j++) {
-				//TO DO : Établir comme dommaine de chaque équipe seulement les formations dont chaque equipe a besoin
 				equipes[i][j] = model.intVar(-1, NB_FORMATIONS);
 			}
 		}
@@ -135,7 +134,7 @@ public class EDF {
 					}
 				}
 				
-				// Contrainte # 3 : Les indisponibilités sont fixées à la valeur de la constante "NO_DISPONIBLE"
+				// Contrainte # 4 : Les indisponibilités sont fixées à la valeur de la constante "NO_DISPONIBLE"
 				if(equipe < NB_EQUIPES) {
 					for (int j = 0; j < NB_JOURS; j++) {
 						if(teamAvailability[j] == 0) {
@@ -217,7 +216,7 @@ public class EDF {
 		// Contrainte # 1 :
 		// Contrainte pour assurer que quand il y a une formation il y a bien une
 		// equipe, une salle et un formatteur
-		for (int i = 0; i < equipes[i].length; i++) {
+		for (int i = 0; i < equipes[0].length; i++) {
 			for (int j = 0; j < formations.length; j++) {
 				IntVar countEqFor = model.intVar("count_eq_for_"+i+"_"+j, 0, 100, false);
 				IntVar countFormFor = model.intVar("count_form_for_"+i+"_"+j, 0, 100, false);
@@ -235,14 +234,14 @@ public class EDF {
 				model.arithm(countEqFor, "=", countSalleFor).post();
 			}
 		}
-		
+		/*
 		// Contrainte # 2 :
 		// Contrainte pour assurer que tous les equipes suivent toutes les formations 
 		for (int i = 0; i < equipes.length; i++) {
 			for (int j = 0; j < formations.length; j++) {
 				IntVar cFile=model.intVar("cFile_equipe: "+i, 0, 100, false);
 				
-				model.count((int) formations[i][0], equipes[i], cFile).post();
+				model.count((int) formations[j][0], equipes[i], cFile).post();
 				model.arithm(cFile, "=", (int) formationsParEquipe[i][j]).post();
 			}
 		}
@@ -258,27 +257,32 @@ public class EDF {
 					}
 			}
 		}
+		*/
 	}
 	
 	public IntVar[] getColumn(IntVar[][] matrix, int j) {
-		IntVar[] column = new IntVar[matrix[0].length];
+		IntVar[] column = model.intVarArray(matrix[0].length, -1, NB_FORMATIONS);
 		
-		for (int i = 0; i < column.length; i++) {
+		for (int i = 0; i < matrix.length; i++) {
 			column[i] = matrix[i][j];
+			model.arithm(matrix[i][j], "=", column[i]).post();
 		}
 		
 		return column;
 	}
+	
 	public IntVar[] getTracesJour(IntVar[] matrix, int j) {
-		IntVar[] jour = new IntVar[NB_TRACES_JOUR];
+		IntVar[] jour = model.intVarArray(NB_TRACES_JOUR, -1, NB_FORMATIONS);
 		if(j==0) {
 			for (int i = 0; i < jour.length; i++) {
 				jour[i] = matrix[i];
+				model.arithm(jour[i], "=", matrix[i]).post();
 			}
 		}
 		else {
 			for (int i = j*5; i < j*5+jour.length; i++) {
 				jour[i-j*5] = matrix[i];
+				model.arithm(jour[i-j*5], "=", matrix[i]).post();
 			}
 		}
 		
@@ -293,7 +297,7 @@ public class EDF {
 	
 	public static void main(String[] args) {
 		EDF edf = new EDF();
-		//edf.go();
+		edf.go();
 	}
 
 }
