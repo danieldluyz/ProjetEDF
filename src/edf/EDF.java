@@ -33,18 +33,23 @@ public class EDF {
 	private static final int NB_TRACES_JOUR = 5;
 	
 	/** Le nombre de jours à planifier */
-	private static final int NB_JOURS = 3;
+	private static final int NB_JOURS = 40;
 	
 	/** Cette matrice comporte la liste de formations
 	 * La première colonne est l'id de la formation (un numéro)
-	 * La deuxième colonne est la durée en créneaux de la formation
-	 * La troisième colonne est le nombre max. de créneaux par jour de cette formation
+	 * La deuxième colonne est la durée en traces de la formation
+	 * La troisième colonne est le nombre max. de traces par jour de cette formation
 	**/
 	private double[][] formations;
 	
-	/** Les besoins de formations par equipes en terme de créneaux. 
+	/**
+	 * 
+	 */
+	private double[][] besoinsEquipe;
+	
+	/** Les besoins de formations par equipes en terme de traces. 
 	 * Les lignes sont les equipes, les colonnes les formations et 
-	 * la valeur de la case le volume de créneaux dont l'équipe i a besoin pour la formation j 
+	 * la valeur de la case le volume de traces dont l'équipe i a besoin pour la formation j 
 	**/
 	private double[][] formationsParEquipe;
 	
@@ -79,21 +84,21 @@ public class EDF {
 		
 		for (int i = 0; i < equipes.length; i++) {
 			for (int j = 0; j < tracesTot; j++) {
-				equipes[i][j] = model.intVar(-1, NB_FORMATIONS);
+				equipes[i][j] = model.intVar("EQ"+i+"T"+j, NO_DISPONIBLE, NB_FORMATIONS);
 			}
 		}
 		
 		for (int i = 0; i < formateurs.length; i++) {
 			for (int j = 0; j < tracesTot; j++) {
 				//Si jamais on veut differencier les formateurs (c.a.d. qu'ils font des formations differentes), on change les valeurs du domaine et c'est tout
-				formateurs[i][j] = model.intVar(-1, NB_FORMATIONS);
+				formateurs[i][j] = model.intVar("FORM"+i+"T"+j, NO_DISPONIBLE, NB_FORMATIONS);
 			}
 		}
 		
 		for (int i = 0; i < salles.length; i++) {
 			for (int j = 0; j < tracesTot; j++) {
 				//Si jamais on veut differencier les salles (c.a.d. qu'elle n'est pas suffisament equipée pour une formation, on supprime cette formation du domaine
-				salles[i][j] = model.intVar(-1, NB_FORMATIONS);
+				salles[i][j] = model.intVar("SALLE"+i+"T"+j, NO_DISPONIBLE, NB_FORMATIONS);
 			}
 		}
 		
@@ -103,10 +108,11 @@ public class EDF {
 		}
 		
 		formationsParEquipe = new double[NB_EQUIPES][NB_FORMATIONS];
+		besoinsEquipe = new double[NB_EQUIPES][NB_FORMATIONS];
 		
 		lireDisponibilitesEquipes();
 		lireBesoinsEquipes();
-		constraintes();
+		contraintes();
 		
 	}
 	
@@ -139,7 +145,11 @@ public class EDF {
 					for (int j = 0; j < NB_JOURS; j++) {
 						if(teamAvailability[j] == 0) {
 							for (int k = 0; k < NB_TRACES_JOUR; k++) {
-								model.arithm(equipes[equipe][j * NB_TRACES_JOUR + k], "=", NO_DISPONIBLE);
+								model.arithm(equipes[equipe][j * NB_TRACES_JOUR + k], "=", NO_DISPONIBLE).post();
+							}
+						} else {
+							for (int k = 0; k < NB_TRACES_JOUR; k++) {
+								model.arithm(equipes[equipe][j * NB_TRACES_JOUR + k], "!=", NO_DISPONIBLE).post();
 							}
 						}
 					}
@@ -163,7 +173,6 @@ public class EDF {
 			String line = buf.readLine();
 			line = buf.readLine();
 			
-			double[][] besoinsEquipe = new double[NB_EQUIPES][NB_FORMATIONS];
 			int equipe = 0;
 			
 			while(line != null) {
@@ -200,11 +209,18 @@ public class EDF {
 				line = buf.readLine();
 			}
 			
-			// Matrice des besoins de formations par equipes en termes de créneaux totaux remplie
+			// Matrice des besoins de formations par equipes en termes de traces totaux remplie
 			for (int i = 0; i < formationsParEquipe.length; i++) {
 				for (int j = 0; j < formationsParEquipe[i].length; j++) {
 					formationsParEquipe[i][j] = besoinsEquipe[i][j] * formations[j][1];
 				}
+			}
+			
+			for (int i = 0; i < formationsParEquipe.length; i++) {
+				for (int j = 0; j < formationsParEquipe[i].length; j++) {
+					System.out.print(formationsParEquipe[i][j]+" - ");
+				}
+				System.out.println("");
 			}
 			
 		} catch (Exception e) {
@@ -212,7 +228,8 @@ public class EDF {
 		}
 	}
 	
-	public void constraintes() {
+	public void contraintes() {
+		
 		// Contrainte # 1 :
 		// Contrainte pour assurer que quand il y a une formation il y a bien une
 		// equipe, une salle et un formatteur
@@ -234,7 +251,8 @@ public class EDF {
 				model.arithm(countEqFor, "=", countSalleFor).post();
 			}
 		}
-		/*
+		
+		
 		// Contrainte # 2 :
 		// Contrainte pour assurer que tous les equipes suivent toutes les formations 
 		for (int i = 0; i < equipes.length; i++) {
@@ -245,6 +263,8 @@ public class EDF {
 				model.arithm(cFile, "=", (int) formationsParEquipe[i][j]).post();
 			}
 		}
+		
+		/*
 		// Contrainte # 3 :
 		// Contrainte pour assurer que le nombre maximum des traces soit respecte
 		for (int i = 0; i < equipes.length; i++) {
@@ -258,6 +278,7 @@ public class EDF {
 			}
 		}
 		*/
+		
 	}
 	
 	public IntVar[] getColumn(IntVar[][] matrix, int j) {
@@ -265,7 +286,7 @@ public class EDF {
 		
 		for (int i = 0; i < matrix.length; i++) {
 			column[i] = matrix[i][j];
-			model.arithm(matrix[i][j], "=", column[i]).post();
+			model.arithm(column[i], "=", matrix[i][j]).post();
 		}
 		
 		return column;
@@ -292,6 +313,7 @@ public class EDF {
 	
 	public void go() {
 		solver.showSolutions(); 
+		solver.findSolution();
 		solver.printStatistics();	
 	}
 	
