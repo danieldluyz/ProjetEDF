@@ -100,7 +100,7 @@ public class EDF {
 		
 		formations = new double[NB_FORMATIONS][3];
 		for (int i = 0; i < NB_FORMATIONS; i++) {
-			formations[i][0] = i;
+			formations[i][0] = i+1;
 		}
 		
 		formationsParEquipe = new double[NB_EQUIPES][NB_FORMATIONS];
