@@ -242,6 +242,18 @@ public class EDF {
 				model.arithm(cFile, ">=", (int) formationsParEquipe[i][j]).post(); // corriger
 			}
 		}
+		// Contrainte # 3 :
+		// Contrainte pour assurer que le nombre maximum des traces soit respecte
+		for (int i = 0; i < equipes.length; i++) {
+			for (int j = 0; j < NB_JOURS; j++) {
+					for(int k=0;k<formations.length;k++) {
+						IntVar cFormJour= model.intVar("CFormJour"+k+"--"+j, 0, 100, false);
+						
+						model.count((int)formations[k][0], getTracesJour(equipes[i], j), cFormJour).post();
+						model.arithm(cFormJour, "<=", (int)formations[k][2]).post();
+					}
+			}
+		}
 	}
 	
 	public IntVar[] getColumn(IntVar[][] matrix, int j) {
@@ -253,6 +265,22 @@ public class EDF {
 		
 		return column;
 	}
+	public IntVar[] getTracesJour(IntVar[] matrix, int j) {
+		IntVar[] jour = new IntVar[NB_TRACES_JOUR];
+		if(j==0) {
+			for (int i = 0; i < jour.length; i++) {
+				jour[i] = matrix[i];
+			}
+		}
+		else {
+			for (int i = j*5; i < j*5+jour.length; i++) {
+				jour[i-j*5] = matrix[i];
+			}
+		}
+		
+		return jour;
+	}
+	
 	
 	public void go() {
 		solver.showSolutions(); 
