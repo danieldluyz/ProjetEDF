@@ -105,6 +105,10 @@ public class EDF {
 		
 		formationsParEquipe = new double[NB_EQUIPES][NB_FORMATIONS];
 		
+		lireDisponibilitesEquipes();
+		lireBesoinsEquipes();
+		constraintes();
+		
 	}
 	
 	public void lireDisponibilitesEquipes() {
@@ -179,7 +183,7 @@ public class EDF {
 				line = buf.readLine();
 			}
 			
-			// Nouveau fichier
+			// Lecture des informations des formations
 			file = new File("./data/FormationsInfos.csv");
 			buf = new BufferedReader(new FileReader(file));
 			line = buf.readLine();
@@ -197,26 +201,11 @@ public class EDF {
 				line = buf.readLine();
 			}
 			
+			// Matrice des besoins de formations par equipes en termes de créneaux totaux remplie
 			for (int i = 0; i < formationsParEquipe.length; i++) {
 				for (int j = 0; j < formationsParEquipe[i].length; j++) {
 					formationsParEquipe[i][j] = besoinsEquipe[i][j] * formations[j][1];
 				}
-			}
-			
-			for (int i = 0; i < besoinsEquipe.length; i++) {
-				for (int j = 0; j < besoinsEquipe[i].length; j++) {
-					System.out.print(besoinsEquipe[i][j]+";");
-				}
-				System.out.println("");	
-			}
-			
-			System.out.println("");
-			
-			for (int i = 0; i < formationsParEquipe.length; i++) {
-				for (int j = 0; j < formationsParEquipe[i].length; j++) {
-					System.out.print(formationsParEquipe[i][j]+";");
-				}
-				System.out.println("");
 			}
 			
 		} catch (Exception e) {
@@ -254,7 +243,7 @@ public class EDF {
 				IntVar cFile=model.intVar("cFile_equipe: "+i, 0, 100, false);
 				
 				model.count((int) formations[i][0], equipes[i], cFile).post();
-				model.arithm(cFile, ">=", (int) formationsParEquipe[i][j]).post(); // corriger
+				model.arithm(cFile, "=", (int) formationsParEquipe[i][j]).post();
 			}
 		}
 	}
@@ -271,13 +260,12 @@ public class EDF {
 	
 	public void go() {
 		solver.showSolutions(); 
-//		solver.findOptimalSolution(, true);
 		solver.printStatistics();	
 	}
 	
 	public static void main(String[] args) {
 		EDF edf = new EDF();
-		edf.lireBesoinsEquipes();
+		//edf.go();
 	}
 
 }
