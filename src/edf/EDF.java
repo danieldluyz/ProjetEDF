@@ -100,10 +100,14 @@ public class EDF {
 		
 		formations = new double[NB_FORMATIONS][3];
 		for (int i = 0; i < NB_FORMATIONS; i++) {
-			formations[i][0] = i;
+			formations[i][0] = i+1;
 		}
 		
 		formationsParEquipe = new double[NB_EQUIPES][NB_FORMATIONS];
+		
+		lireDisponibilitesEquipes();
+		lireBesoinsEquipes();
+		constraintes();
 		
 	}
 	
@@ -179,29 +183,29 @@ public class EDF {
 				line = buf.readLine();
 			}
 			
-			// Nouveau fichier
+			// Lecture des informations des formations
 			file = new File("./data/FormationsInfos.csv");
 			buf = new BufferedReader(new FileReader(file));
 			line = buf.readLine();
 			line = buf.readLine();
 			line = buf.readLine();
+			
+			int formation = 0;
+
 			while(line != null) {
 				String[] besoin = line.split(";");
-				
-				for (int i = 6; i <= 7; i++) {
-					/*
-					String[] num = besoin[i].split(",");
-					
-					int a = Integer.parseInt(num[0].trim());
-					double b = Integer.parseInt(num[1].trim().substring(0, 1));
-					double c = a + b/10;
-					
-					besoinsEquipe[equipe][i-1] = c;
-					*/
-					System.out.print(besoin[i]+";");
+				for (int i = 6; i <= 7 && formation < 7; i++) {
+					formations[formation][i-5] = Integer.parseInt(besoin[i]);
 				}
-				System.out.println("");
+				formation++;
 				line = buf.readLine();
+			}
+			
+			// Matrice des besoins de formations par equipes en termes de créneaux totaux remplie
+			for (int i = 0; i < formationsParEquipe.length; i++) {
+				for (int j = 0; j < formationsParEquipe[i].length; j++) {
+					formationsParEquipe[i][j] = besoinsEquipe[i][j] * formations[j][1];
+				}
 			}
 			
 		} catch (Exception e) {
@@ -239,7 +243,7 @@ public class EDF {
 				IntVar cFile=model.intVar("cFile_equipe: "+i, 0, 100, false);
 				
 				model.count((int) formations[i][0], equipes[i], cFile).post();
-				model.arithm(cFile, ">=", (int) formationsParEquipe[i][j]).post(); // corriger
+				model.arithm(cFile, "=", (int) formationsParEquipe[i][j]).post();
 			}
 		}
 		// Contrainte # 3 :
@@ -284,13 +288,12 @@ public class EDF {
 	
 	public void go() {
 		solver.showSolutions(); 
-//		solver.findOptimalSolution(, true);
 		solver.printStatistics();	
 	}
 	
 	public static void main(String[] args) {
 		EDF edf = new EDF();
-		edf.lireBesoinsEquipes();
+		//edf.go();
 	}
 
 }
