@@ -139,7 +139,7 @@ public class EDF {
 					for (int j = 0; j < NB_JOURS; j++) {
 						if(teamAvailability[j] == 0) {
 							for (int k = 0; k < NB_TRACES_JOUR; k++) {
-								model.arithm(equipes[equipe][j * NB_TRACES_JOUR + k], "=", NO_DISPONIBLE);
+								model.arithm(equipes[equipe][j * NB_TRACES_JOUR + k], "=", NO_DISPONIBLE).post();
 							}
 						}
 					}
@@ -213,6 +213,7 @@ public class EDF {
 	}
 	
 	public void constraintes() {
+		/*
 		// Contrainte # 1 :
 		// Contrainte pour assurer que quand il y a une formation il y a bien une
 		// equipe, une salle et un formatteur
@@ -234,7 +235,7 @@ public class EDF {
 				model.arithm(countEqFor, "=", countSalleFor).post();
 			}
 		}
-		/*
+		
 		// Contrainte # 2 :
 		// Contrainte pour assurer que tous les equipes suivent toutes les formations 
 		for (int i = 0; i < equipes.length; i++) {
