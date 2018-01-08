@@ -21,19 +21,20 @@ public class EDF {
 	private static final int NB_EQUIPES = 14;
 	
 	/** Le nombre de formateurs */
-	private static final int NB_FORMATEURS = 40;
+
+	private static final int NB_FORMATEURS = 30;
 	
 	/** Le nombre de formations données par le centre */
 	private static final int NB_FORMATIONS = 7;
 	
 	/** Le numéro de salles */
-	private static final int NB_SALLES = 5;
+	private static final int NB_SALLES = 20;
 	
 	/** Le nombre de traces disponibles par jour */
 	private static final int NB_TRACES_JOUR = 5;
 	
 	/** Le nombre de jours à planifier */
-	private static final int NB_JOURS = 60;
+	private static final int NB_JOURS = 30;
 	
 	/** Cette matrice comporte la liste de formations
 	 * La première colonne est l'id de la formation (un numéro)
@@ -215,7 +216,6 @@ public class EDF {
 					formationsParEquipe[i][j] = besoinsEquipe[i][j] * formations[j][1];
 				}
 			}
-			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -245,7 +245,6 @@ public class EDF {
 			}
 		}
 		
-		
 		// Contrainte # 2 :
 		// Contrainte pour assurer que tous les equipes suivent toutes les formations 
 		for (int i = 0; i < equipes.length; i++) {
@@ -257,7 +256,6 @@ public class EDF {
 			}
 		}
 		
-		/*
 		// Contrainte # 3 :
 		// Contrainte pour assurer que le nombre maximum des traces soit respecte
 		for (int i = 0; i < equipes.length; i++) {
@@ -270,8 +268,6 @@ public class EDF {
 					}
 			}
 		}
-		*/
-		
 	}
 	
 	public IntVar[] getColumn(IntVar[][] matrix, int j) {
