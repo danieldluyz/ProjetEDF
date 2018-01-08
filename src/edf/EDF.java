@@ -21,19 +21,19 @@ public class EDF {
 	private static final int NB_EQUIPES = 14;
 	
 	/** Le nombre de formateurs */
-	private static final int NB_FORMATEURS = 3;
+	private static final int NB_FORMATEURS = 40;
 	
 	/** Le nombre de formations données par le centre */
 	private static final int NB_FORMATIONS = 7;
 	
 	/** Le numéro de salles */
-	private static final int NB_SALLES = 2;
+	private static final int NB_SALLES = 5;
 	
 	/** Le nombre de traces disponibles par jour */
 	private static final int NB_TRACES_JOUR = 5;
 	
 	/** Le nombre de jours à planifier */
-	private static final int NB_JOURS = 40;
+	private static final int NB_JOURS = 60;
 	
 	/** Cette matrice comporte la liste de formations
 	 * La première colonne est l'id de la formation (un numéro)
@@ -214,13 +214,6 @@ public class EDF {
 				for (int j = 0; j < formationsParEquipe[i].length; j++) {
 					formationsParEquipe[i][j] = besoinsEquipe[i][j] * formations[j][1];
 				}
-			}
-			
-			for (int i = 0; i < formationsParEquipe.length; i++) {
-				for (int j = 0; j < formationsParEquipe[i].length; j++) {
-					System.out.print(formationsParEquipe[i][j]+" - ");
-				}
-				System.out.println("");
 			}
 			
 		} catch (Exception e) {
