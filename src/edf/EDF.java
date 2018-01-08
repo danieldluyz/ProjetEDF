@@ -34,17 +34,19 @@ public class EDF {
 	private static final int NB_TRACES_JOUR = 5;
 	
 	/** Le nombre de jours à planifier */
-	private static final int NB_JOURS = 30;
+	private static final int NB_JOURS = 250;
 	
-	/** Cette matrice comporte la liste de formations
+	/** 
+	 * Cette matrice comporte la liste de formations
 	 * La première colonne est l'id de la formation (un numéro)
 	 * La deuxième colonne est la durée en traces de la formation
 	 * La troisième colonne est le nombre max. de traces par jour de cette formation
 	**/
 	private double[][] formations;
 	
-	/**
-	 * 
+	/** 
+	 * Matrice de taille NB_EQUIPES x NB_FORMATIONS dont la valeur (i,j) 
+	 * indique le nombre de fois que l’équipe i a besoin de suivre  la formation j.
 	 */
 	private double[][] besoinsEquipe;
 	
@@ -135,9 +137,9 @@ public class EDF {
 				
 				// On trouve les dispos d'une équipe
 				for (int i = 0; i < team.length-1; i++) {
-					if(team[i+1].equals("J")) teamAvailability[i] = 1;
+					if(team[i+1].equals("J")) teamAvailability[i] = 0;
 					else {
-						teamAvailability[i] = 0;
+						teamAvailability[i] = 1;
 					}
 				}
 				
@@ -183,8 +185,12 @@ public class EDF {
 					String[] num = besoin[i].split(",");
 					
 					int a = Integer.parseInt(num[0].trim());
-					double b = Integer.parseInt(num[1].trim().substring(0, 1));
-					double c = a + b/10;
+					double c = a;
+					
+					if(num.length>1) {
+						double b = Integer.parseInt(num[1].trim().substring(0, 1));
+						c += b/10;
+					} 
 					
 					besoinsEquipe[equipe][i-1] = c;
 				}
@@ -210,18 +216,39 @@ public class EDF {
 				line = buf.readLine();
 			}
 			
-			// Matrice des besoins de formations par equipes en termes de traces totaux remplie
+			// Matrice des besoins de formations par equipes en traces totales remplie
 			for (int i = 0; i < formationsParEquipe.length; i++) {
 				for (int j = 0; j < formationsParEquipe[i].length; j++) {
 					formationsParEquipe[i][j] = besoinsEquipe[i][j] * formations[j][1];
 				}
 			}
+			
+			/*
+			for (int i = 0; i < formationsParEquipe.length; i++) {
+				for (int j = 0; j < formationsParEquipe[i].length; j++) {
+					System.out.print(formationsParEquipe[i][j] + " ");
+				}
+				System.out.println("");
+			}
+			
+			System.out.println("");
+			System.out.println("");
+			
+			for (int i = 0; i < formations.length; i++) {
+				for (int j = 0; j < formations[i].length; j++) {
+					System.out.print(formations[i][j] + " ");
+				}
+				System.out.println("");
+			}
+			*/
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 	
 	public void contraintes() {
+		
 		
 		// Contrainte # 1 :
 		// Contrainte pour assurer que quand il y a une formation il y a bien une
@@ -245,8 +272,9 @@ public class EDF {
 			}
 		}
 		
+		
 		// Contrainte # 2 :
-		// Contrainte pour assurer que tous les equipes suivent toutes les formations 
+		// Contrainte pour assurer que toutes les equipes suivent toutes les formations 
 		for (int i = 0; i < equipes.length; i++) {
 			for (int j = 0; j < formations.length; j++) {
 				IntVar cFile=model.intVar("cFile_equipe: "+i, 0, 100, false);
@@ -255,6 +283,7 @@ public class EDF {
 				model.arithm(cFile, "=", (int) formationsParEquipe[i][j]).post();
 			}
 		}
+		
 		
 		// Contrainte # 3 :
 		// Contrainte pour assurer que le nombre maximum des traces soit respecte
@@ -268,6 +297,7 @@ public class EDF {
 					}
 			}
 		}
+		
 	}
 	
 	public IntVar[] getColumn(IntVar[][] matrix, int j) {
