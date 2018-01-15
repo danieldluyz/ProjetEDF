@@ -6,7 +6,11 @@ import java.io.FileReader;
 
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solver;
+import org.chocosolver.solver.search.strategy.Search;
 import org.chocosolver.solver.variables.IntVar;
+import org.chocosolver.util.tools.ArrayUtils;
+
+import static org.chocosolver.solver.search.strategy.Search.activityBasedSearch;
 
 public class EDF {
 	
@@ -34,7 +38,7 @@ public class EDF {
 	private static final int NB_TRACES_JOUR = 5;
 	
 	/** Le nombre de jours à planifier */
-	private static final int NB_JOURS = 250;
+	private static final int NB_JOURS = 100;
 	
 	/** 
 	 * Cette matrice comporte la liste de formations
@@ -255,64 +259,55 @@ public class EDF {
 		// equipe, une salle et un formatteur
 		for (int i = 0; i < equipes[0].length; i++) {
 			for (int j = 0; j < formations.length; j++) {
-				IntVar countEqFor = model.intVar("count_eq_for_"+i+"_"+j, 0, 100, false);
-				IntVar countFormFor = model.intVar("count_form_for_"+i+"_"+j, 0, 100, false);
-				IntVar countSalleFor = model.intVar("count_salle_for_"+i+"_"+j, 0, 100, false);
+				int max = (int) Math.ceil(formations[j][2]);
+				IntVar count = model.intVar("count_eq_for_"+i+"_"+j, 0, max, false);
 				
 				IntVar[] columnEquipe = getColumn(equipes, i);
 				IntVar[] columnFormateur = getColumn(formateurs, i);
 				IntVar[] columnSalle = getColumn(salles, i);
 				
-				model.count((int) formations[j][0], columnEquipe, countEqFor).post();
-				model.count((int) formations[j][0], columnFormateur, countFormFor).post();
-				model.count((int) formations[j][0], columnSalle, countSalleFor).post();
+				// On peut aussi faire des objets qu lieu des matrices pour les formations
+				model.count((int) formations[j][0], columnEquipe, count).post();
+				model.count((int) formations[j][0], columnFormateur, count).post();
+				model.count((int) formations[j][0], columnSalle, count).post();
 
-				model.arithm(countEqFor, "=", countFormFor).post();
-				model.arithm(countEqFor, "=", countSalleFor).post();
 			}
 		}
 		
 		
 		// Contrainte # 2 :
-		// Contrainte pour assurer que toutes les equipes suivent toutes les formations 
+		// Contrainte pour assurer que toutes les equipes suivent toutes les formations le bon nombre de fois
 		for (int i = 0; i < equipes.length; i++) {
 			for (int j = 0; j < formations.length; j++) {
-				IntVar cFile=model.intVar("cFile_equipe: "+i, 0, 100, false);
-				
-				model.count((int) formations[j][0], equipes[i], cFile).post();
-				model.arithm(cFile, "=", (int) formationsParEquipe[i][j]).post();
+				IntVar cFileIJ=model.intVar("cFile_equipe: "+i+"- formation:"+j, (int) formationsParEquipe[i][j]);
+				model.count((int) formations[j][0], equipes[i], cFileIJ).post();
 			}
 		}
 		
-		
+		/*
 		// Contrainte # 3 :
-		// Contrainte pour assurer que le nombre maximum des traces soit respecte
+		// Contrainte pour assurer que le nombre maximum des traces de chaque formation soit respecte
 		for (int i = 0; i < equipes.length; i++) {
 			for (int j = 0; j < NB_JOURS; j++) {
 					for(int k=0;k<formations.length;k++) {
-						IntVar cFormJour= model.intVar("CFormJour"+k+"--"+j, 0, 100, false);
+						IntVar cFormJour= model.intVar("CFormJour"+k+"--"+j, 0, NB_TRACES_JOUR);
 						
 						model.count((int)formations[k][0], getTracesJour(equipes[i], j), cFormJour).post();
 						model.arithm(cFormJour, "<=", (int)formations[k][2]).post();
 					}
 			}
 		}
+		*/
 		
 	}
 	
-	public IntVar[] getColumn(IntVar[][] matrix, int j) {
-		IntVar[] column = model.intVarArray(matrix[0].length, -1, NB_FORMATIONS);
-		
-		for (int i = 0; i < matrix.length; i++) {
-			column[i] = matrix[i][j];
-			model.arithm(column[i], "=", matrix[i][j]).post();
-		}
-		
-		return column;
+	public IntVar[] getColumn(IntVar[][] matrix, int j) {		
+		return ArrayUtils.getColumn(matrix, j);
 	}
 	
 	public IntVar[] getTracesJour(IntVar[] matrix, int j) {
-		IntVar[] jour = model.intVarArray(NB_TRACES_JOUR, -1, NB_FORMATIONS);
+		// TODO : CORRIGER
+		IntVar[] jour = model.intVarArray(NB_TRACES_JOUR, NO_DISPONIBLE, NB_FORMATIONS);
 		if(j==0) {
 			for (int i = 0; i < jour.length; i++) {
 				jour[i] = matrix[i];
@@ -331,6 +326,17 @@ public class EDF {
 	
 	
 	public void go() {
+		IntVar[] varEquipes = new IntVar[NB_TRACES_JOUR * NB_JOURS * NB_EQUIPES];
+		int c = 0;
+		for (int j = 0; j < equipes[0].length; j++) {
+			for (int i = 0; i < equipes.length; i++) {
+				varEquipes[c] = equipes[i][j];
+				c++;
+			}
+		}
+		// Il faut qu'on determine dans quel ordre il faut brancher dessus et por ejmemplo comenzar por las columnas y no por las filas
+		solver.setSearch(activityBasedSearch(varEquipes));
+//		solver.setSearch(Search.domOverWDegSearch(varEquipes));
 		solver.showSolutions(); 
 		solver.findSolution();
 		solver.printStatistics();	
