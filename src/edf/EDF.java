@@ -286,7 +286,7 @@ public class EDF {
 			}
 		}
 		
-		/*
+		
 		// Contrainte # 3 :
 		// Contrainte pour assurer que le nombre maximum des traces de chaque formation soit respecte
 		for (int i = 0; i < equipes.length; i++) {
@@ -299,7 +299,6 @@ public class EDF {
 					}
 			}
 		}
-		*/
 		
 	}
 	
@@ -308,22 +307,18 @@ public class EDF {
 	}
 	
 	public IntVar[] getTracesJour(IntVar[] matrix, int j) {
-		// TODO : CORRIGER
-		IntVar[] jour = model.intVarArray(NB_TRACES_JOUR, NO_DISPONIBLE, NB_FORMATIONS);
+		IntVar[] tracesJour = new IntVar[NB_TRACES_JOUR];
 		if(j==0) {
-			for (int i = 0; i < jour.length; i++) {
-				jour[i] = matrix[i];
-				model.arithm(jour[i], "=", matrix[i]).post();
+			for (int i = 0; i < NB_TRACES_JOUR; i++) {
+				tracesJour[i] = matrix[i];
 			}
 		}
 		else {
-			for (int i = j*5; i < j*5+jour.length; i++) {
-				jour[i-j*5] = matrix[i];
-				model.arithm(jour[i-j*5], "=", matrix[i]).post();
+			for (int i = j*5; i < j*5 + NB_TRACES_JOUR; i++) {
+				tracesJour[i-j*5] = matrix[i];
 			}
 		}
-		
-		return jour;
+		return tracesJour;
 	}
 	
 	
