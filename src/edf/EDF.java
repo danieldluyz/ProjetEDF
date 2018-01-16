@@ -3,6 +3,7 @@ package edf;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.ArrayList;
 
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solver;
@@ -32,7 +33,7 @@ public class EDF {
 	private static final int NB_FORMATIONS = 7;
 	
 	/** Le numéro de salles */
-	private static final int NB_SALLES = 20;
+	private static final int NB_SALLES = 17;
 	
 	/** Le nombre de traces disponibles par jour */
 	private static final int NB_TRACES_JOUR = 5;
@@ -104,12 +105,7 @@ public class EDF {
 			}
 		}
 		
-		for (int i = 0; i < salles.length; i++) {
-			for (int j = 0; j < tracesTot; j++) {
-				//Si jamais on veut differencier les salles (c.a.d. qu'elle n'est pas suffisament equipée pour une formation, on supprime cette formation du domaine
-				salles[i][j] = model.intVar("SALLE"+i+"T"+j, NO_DISPONIBLE, NB_FORMATIONS);
-			}
-		}
+		lireContraintesSalles();
 		
 		formations = new double[NB_FORMATIONS][3];
 		for (int i = 0; i < NB_FORMATIONS; i++) {
@@ -249,6 +245,54 @@ public class EDF {
 			*/
 			
 		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void lireContraintesSalles() {
+		// Lecture des disponibilités des équipes
+		File file = new File("./data/Salles-formations.csv");
+		BufferedReader buf;
+		int[][] sf= new int [NB_FORMATIONS][NB_SALLES];
+		try {
+			buf = new BufferedReader(new FileReader(file));
+			String line = buf.readLine();
+			line = buf.readLine();
+			int jj=0;
+			while(line != null) {
+				String[] aux=line.split(",");
+				for(int i=1;i<aux.length;i++) {
+					sf[jj][i-1]=Integer.parseInt(aux[i])*(jj+1);
+				}
+				jj++;
+				line = buf.readLine();
+			}
+			ArrayList<ArrayList<Integer>> p= new ArrayList<>();
+			for(int i=0;i<sf[0].length;i++) {
+				ArrayList<Integer> aux=new ArrayList<Integer>();
+				aux.add(-1);
+				aux.add(0);
+				for(int j=0;j<sf.length;j++) {
+					if(!aux.contains(sf[j][i])) {
+						aux.add(sf[j][i]);
+					}
+				}
+				p.add(aux);
+			}
+			int tracesTot = NB_TRACES_JOUR * NB_JOURS;
+			for (int i = 0; i < salles.length; i++) {
+				int [] d= new int [p.get(i).size()];
+			    for (int ii=0; ii < d.length; ii++)
+			    {
+			        d[ii] = p.get(i).get(ii).intValue();
+			    }
+				for (int j = 0; j < tracesTot; j++) {
+					//Si jamais on veut differencier les salles (c.a.d. qu'elle n'est pas suffisament equipée pour une formation, on supprime cette formation du domaine
+					salles[i][j] = model.intVar("SALLE"+i+"T"+j, d);
+				}
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
