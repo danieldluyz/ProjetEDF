@@ -108,7 +108,8 @@ public class EDF {
 			c.add(Calendar.DATE, i);
 			String dateString = formatter.format(c.getTime());
 			for (int j = 0; j < tracesTot; j++) {
-				equipes[i][j] = model.intVar("EQ"+i+" "+dateString+" "+"T"+j, NO_DISPONIBLE, NB_FORMATIONS);
+				int trace = (j  % NB_TRACES_JOUR) + 1;
+				equipes[i][j] = model.intVar("EQ"+i+" "+dateString+" "+"T"+trace, NO_DISPONIBLE, NB_FORMATIONS);
 			}
 		}
 		
@@ -118,8 +119,6 @@ public class EDF {
 				formateurs[i][j] = model.intVar("FORM"+i+"T"+j, NO_DISPONIBLE, NB_FORMATIONS);
 			}
 		}
-		
-		lireContraintesSalles();
 		
 		formations = new double[NB_FORMATIONS][3];
 		for (int i = 0; i < NB_FORMATIONS; i++) {
@@ -131,6 +130,8 @@ public class EDF {
 		
 		lireDisponibilitesEquipes();
 		lireBesoinsEquipes();
+		lireContraintesSalles();
+		//lireDsiponibilitesFormateurs();
 		contraintes();
 		
 	}
@@ -238,26 +239,6 @@ public class EDF {
 					formationsParEquipe[i][j] = besoinsEquipe[i][j] * formations[j][1];
 				}
 			}
-			
-			/*
-			for (int i = 0; i < formationsParEquipe.length; i++) {
-				for (int j = 0; j < formationsParEquipe[i].length; j++) {
-					System.out.print(formationsParEquipe[i][j] + " ");
-				}
-				System.out.println("");
-			}
-			
-			System.out.println("");
-			System.out.println("");
-			
-			for (int i = 0; i < formations.length; i++) {
-				for (int j = 0; j < formations[i].length; j++) {
-					System.out.print(formations[i][j] + " ");
-				}
-				System.out.println("");
-			}
-			*/
-			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -307,6 +288,32 @@ public class EDF {
 			}
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public void lireDsiponibilitesFormateurs() {
+		
+		// Lecture des disponibilités des équipes
+		File file = new File("./data/DisposFormateurs.csv");
+		BufferedReader buf;
+		try {
+			buf = new BufferedReader(new FileReader(file));
+			String line = buf.readLine();
+			line = buf.readLine();
+			line = buf.readLine();
+			line = buf.readLine();
+			
+			while(line != null) {
+				String[] formateur = line.split(";");
+				for (int i = 4; i < formateur.length; i++) {
+					if(formateur[i].length() > 0) System.out.print(formateur[i]+" - ");
+				}
+				System.out.println("");
+				line = buf.readLine();
+			}
+			
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
