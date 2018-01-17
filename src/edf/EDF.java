@@ -3,11 +3,13 @@ package edf;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solver;
-import org.chocosolver.solver.search.strategy.Search;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.util.tools.ArrayUtils;
 
@@ -21,6 +23,9 @@ public class EDF {
 	private static final int NO_DISPONIBLE = -1;
 	
 	// DONNÉES :
+	
+	/** La date de début du planning en format dd/mm/yyyy */
+	private static final String START_DATE = "01/09/2017";
 	
 	/** Le nombre d'équipes */
 	private static final int NB_EQUIPES = 14;
@@ -82,10 +87,16 @@ public class EDF {
 	/** Le solver Choco */
 	private Solver solver;
 	
-	public EDF() {
+	public EDF() throws Exception {
 		model = new Model();
 		solver = model.getSolver();
 		
+		//Traitement des dates
+		Calendar c = Calendar.getInstance();
+		SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+		Date date = formatter.parse(START_DATE);
+		
+		//Initialization des données
 		int tracesTot = NB_TRACES_JOUR * NB_JOURS;
 		
 		equipes = new IntVar[NB_EQUIPES][tracesTot];
@@ -93,8 +104,11 @@ public class EDF {
 		salles = new IntVar[NB_SALLES][tracesTot];
 		
 		for (int i = 0; i < equipes.length; i++) {
+			c.setTime(date);
+			c.add(Calendar.DATE, i);
+			String dateString = formatter.format(c.getTime());
 			for (int j = 0; j < tracesTot; j++) {
-				equipes[i][j] = model.intVar("EQ"+i+"T"+j, NO_DISPONIBLE, NB_FORMATIONS);
+				equipes[i][j] = model.intVar("EQ"+i+" "+dateString+" "+"T"+j, NO_DISPONIBLE, NB_FORMATIONS);
 			}
 		}
 		
@@ -384,8 +398,13 @@ public class EDF {
 	}
 	
 	public static void main(String[] args) {
-		EDF edf = new EDF();
-		edf.go();
+		try {
+			EDF edf = new EDF();
+			edf.go();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 }
