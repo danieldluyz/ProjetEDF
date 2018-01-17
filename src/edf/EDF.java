@@ -4,6 +4,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -32,7 +35,7 @@ public class EDF {
 	
 	/** Le nombre de formateurs */
 
-	private static final int NB_FORMATEURS = 30;
+	private static final int NB_FORMATEURS = 40;
 	
 	/** Le nombre de formations données par le centre */
 	private static final int NB_FORMATIONS = 7;
@@ -319,16 +322,47 @@ public class EDF {
 			buf = new BufferedReader(new FileReader(file));
 			String line = buf.readLine();
 			line = buf.readLine();
-			line = buf.readLine();
-			line = buf.readLine();
 			
+			int id = 0;
+			ArrayList<Conge> conges = new ArrayList<Conge>();
+			
+			//Récuperation des données de congés
 			while(line != null) {
 				String[] formateur = line.split(";");
-				for (int i = 4; i < formateur.length; i++) {
-					if(formateur[i].length() > 0) System.out.print(formateur[i]+" - ");
+				for (int i = 1; i < formateur.length; i = i+2) {
+					if(formateur[i].length() > 0) {
+						Conge conge = new Conge(id, formateur[i], formateur[i+1]);
+						conges.add(conge);
+					}
 				}
-				System.out.println("");
+				id++;
 				line = buf.readLine();
+			}
+			
+			//Traitement des dates
+			DateTimeFormatter formatterDateTime = DateTimeFormatter.ofPattern("dd/MM/yy");
+			DateTimeFormatter formatterStartDate = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+			
+			//Dates du planning
+			LocalDate startDate = LocalDate.parse(START_DATE, formatterStartDate);
+			LocalDate endDate = startDate.plusDays(NB_JOURS);
+			
+			for (int i = 0; i < conges.size(); i++) {
+				Conge conge = conges.get(i);
+				int idFormateur = conge.getFormateur();
+				
+				LocalDate dateDebutConges = LocalDate.parse(conge.getDateDebut(), formatterDateTime);
+				LocalDate dateFinConges = LocalDate.parse(conge.getDateFin(), formatterDateTime);
+				
+				if(dateFinConges.isAfter(dateDebutConges) && dateDebutConges.isAfter(startDate) && dateFinConges.isBefore(endDate)) {
+					int joursConge = (int) ChronoUnit.DAYS.between(dateDebutConges, dateFinConges);
+					int joursDepuisDebut = (int) ChronoUnit.DAYS.between(startDate, dateDebutConges);
+					
+					for (int j = joursDepuisDebut; j < (joursConge * NB_TRACES_JOUR); j++) {
+						model.arithm(formateurs[idFormateur][j], "=", NO_DISPONIBLE).post();
+					}
+					
+				}
 			}
 			
 		} catch (Exception e) {
