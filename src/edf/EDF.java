@@ -104,10 +104,10 @@ public class EDF {
 		salles = new IntVar[NB_SALLES][tracesTot];
 		
 		for (int i = 0; i < equipes.length; i++) {
-			c.setTime(date);
-			c.add(Calendar.DATE, i);
-			String dateString = formatter.format(c.getTime());
 			for (int j = 0; j < tracesTot; j++) {
+				c.setTime(date);
+				c.add(Calendar.DATE, j/NB_TRACES_JOUR);
+				String dateString = formatter.format(c.getTime());
 				int trace = (j  % NB_TRACES_JOUR) + 1;
 				equipes[i][j] = model.intVar("EQ"+i+" "+dateString+" "+"T"+trace, NO_DISPONIBLE, NB_FORMATIONS);
 			}
@@ -115,8 +115,12 @@ public class EDF {
 		
 		for (int i = 0; i < formateurs.length; i++) {
 			for (int j = 0; j < tracesTot; j++) {
+				c.setTime(date);
+				c.add(Calendar.DATE, j/NB_TRACES_JOUR);
+				String dateString = formatter.format(c.getTime());
+				int trace = (j  % NB_TRACES_JOUR) + 1;
 				//Si jamais on veut differencier les formateurs (c.a.d. qu'ils font des formations differentes), on change les valeurs du domaine et c'est tout
-				formateurs[i][j] = model.intVar("FORM"+i+"T"+j, NO_DISPONIBLE, NB_FORMATIONS);
+				formateurs[i][j] = model.intVar("FORM"+i+" "+dateString+" "+"T"+trace, NO_DISPONIBLE, NB_FORMATIONS);
 			}
 		}
 		
@@ -131,7 +135,7 @@ public class EDF {
 		lireDisponibilitesEquipes();
 		lireBesoinsEquipes();
 		lireContraintesSalles();
-		//lireDsiponibilitesFormateurs();
+		lireDsiponibilitesFormateurs();
 		contraintes();
 		
 	}
@@ -274,16 +278,30 @@ public class EDF {
 				}
 				p.add(aux);
 			}
+			
 			int tracesTot = NB_TRACES_JOUR * NB_JOURS;
+			
+			//Traitement Date
+			Calendar c = Calendar.getInstance();
+			SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+			Date date = formatter.parse(START_DATE);
+			
 			for (int i = 0; i < salles.length; i++) {
-				int [] d= new int [p.get(i).size()];
+	
+				//Récuperation des formations pour lesquelles la salle est adaptée
+				int [] d = new int [p.get(i).size()];
 			    for (int ii=0; ii < d.length; ii++)
 			    {
 			        d[ii] = p.get(i).get(ii).intValue();
 			    }
+			    
 				for (int j = 0; j < tracesTot; j++) {
+					c.setTime(date);
+					c.add(Calendar.DATE, j/NB_TRACES_JOUR);
+					String dateString = formatter.format(c.getTime());
+					int trace = (j  % NB_TRACES_JOUR) + 1;
 					//Si jamais on veut differencier les salles (c.a.d. qu'elle n'est pas suffisament equipée pour une formation, on supprime cette formation du domaine
-					salles[i][j] = model.intVar("SALLE"+i+"T"+j, d);
+					salles[i][j] = model.intVar("SALLE"+i+" "+dateString+" "+"T"+trace, d);
 				}
 			}
 		} catch (Exception e) {
