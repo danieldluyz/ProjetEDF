@@ -3,6 +3,7 @@ package edf;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -440,7 +441,8 @@ public class EDF {
 	
 	
 	public void go() {
-		IntVar[] varEquipes = new IntVar[NB_TRACES_JOUR * NB_JOURS * NB_EQUIPES];
+		int tot = NB_TRACES_JOUR * NB_JOURS * NB_EQUIPES + NB_TRACES_JOUR * NB_JOURS * NB_FORMATEURS + NB_TRACES_JOUR * NB_JOURS * NB_SALLES;
+		IntVar[] varEquipes = new IntVar[tot];
 		int c = 0;
 		for (int j = 0; j < equipes[0].length; j++) {
 			for (int i = 0; i < equipes.length; i++) {
@@ -448,18 +450,70 @@ public class EDF {
 				c++;
 			}
 		}
+		
+		for (int j = 0; j < formateurs[0].length; j++) {
+			for (int i = 0; i < formateurs.length; i++) {
+				varEquipes[c] = formateurs[i][j];
+				c++;
+			}
+		}
+		
+		for (int j = 0; j < salles[0].length; j++) {
+			for (int i = 0; i < salles.length; i++) {
+				varEquipes[c] = salles[i][j];
+				c++;
+			}
+		}
+		
 		// Il faut qu'on determine dans quel ordre il faut brancher dessus et por ejmemplo comenzar por las columnas y no por las filas
 		solver.setSearch(activityBasedSearch(varEquipes));
 //		solver.setSearch(Search.domOverWDegSearch(varEquipes));
 		solver.showSolutions(); 
 		solver.findSolution();
-		solver.printStatistics();	
+		solver.printStatistics();
+		
+		/*
+		Solution solution = new Solution(model); while (solver.solve()) {
+		    solution.record();
+		    System.out.println(solution);
+		    break;
+		}
+		*/
 	}
 	
 	public static void main(String[] args) {
 		try {
 			EDF edf = new EDF();
 			edf.go();
+			
+			PrintWriter writer = new PrintWriter("./data/solutionFormateurs.txt", "UTF-8");
+			
+			for(int i=0;i<edf.formateurs.length;i++) {
+				for (int j = 0; j < edf.formateurs[i].length; j++) {
+					writer.println(edf.formateurs[i][j]+"  ");
+				}
+			}
+			
+			writer.close();
+			writer = new PrintWriter("./data/solutionEquipes.txt", "UTF-8");
+			
+			for(int i=0;i<edf.equipes.length;i++) {
+				for (int j = 0; j < edf.equipes[i].length; j++) {
+					writer.println(edf.equipes[i][j]+"  ");
+				}
+			}
+			
+			writer.close();
+			writer = new PrintWriter("./data/solutionSalles.txt", "UTF-8");	
+			
+			for(int i=0;i<edf.salles.length;i++) {
+				for (int j = 0; j < edf.salles[i].length; j++) {
+					writer.println(edf.salles[i][j]+"  ");
+				}
+			}
+			
+			writer.close();
+			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
