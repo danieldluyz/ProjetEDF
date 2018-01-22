@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.text.SimpleDateFormat;
+import java.text.Normalizer.Form;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -12,7 +13,9 @@ import java.util.Calendar;
 import java.util.Date;
 
 import org.chocosolver.solver.Model;
+import org.chocosolver.solver.Solution;
 import org.chocosolver.solver.Solver;
+import org.chocosolver.solver.search.strategy.Search;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.util.tools.ArrayUtils;
 
@@ -314,72 +317,69 @@ public class EDF {
 	}
 	
 	public void lireDsiponibilitesFormateurs() {
-		
-		// Lecture des disponibilit√©s des √©quipes
-		File file = new File("./data/DisposFormateurs.csv");
-		BufferedReader buf;
-		try {
-			buf = new BufferedReader(new FileReader(file));
-			String line = buf.readLine();
-			line = buf.readLine();
-			
-			int id = 0;
-			ArrayList<Conge> conges = new ArrayList<Conge>();
-			
-			//R√©cuperation des donn√©es de cong√©s
-			while(line != null) {
-				String[] formateur = line.split(";");
-				for (int i = 1; i < formateur.length; i = i+2) {
-					if(formateur[i].length() > 0) {
-						Conge conge = new Conge(id, formateur[i], formateur[i+1]);
-						conges.add(conge);
-					}
-				}
-				id++;
-				line = buf.readLine();
-			}
-			
-			//Traitement des dates
-			DateTimeFormatter formatterDateTime = DateTimeFormatter.ofPattern("dd/MM/yy");
-			DateTimeFormatter formatterStartDate = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-			
-			//Dates du planning
-			LocalDate startDate = LocalDate.parse(START_DATE, formatterStartDate);
-			LocalDate endDate = startDate.plusDays(NB_JOURS);
-			
-			for (int i = 0; i < conges.size(); i++) {
-				Conge conge = conges.get(i);
-				int idFormateur = conge.getFormateur();
-				
-				LocalDate dateDebutConges = LocalDate.parse(conge.getDateDebut(), formatterDateTime);
-				LocalDate dateFinConges = LocalDate.parse(conge.getDateFin(), formatterDateTime);
-				
-				if(dateFinConges.isAfter(dateDebutConges) && dateDebutConges.isAfter(startDate) && dateFinConges.isBefore(endDate)) {
-					int joursConge = (int) ChronoUnit.DAYS.between(dateDebutConges, dateFinConges);
-					int joursDepuisDebut = (int) ChronoUnit.DAYS.between(startDate, dateDebutConges);
+		// Lecture des disponibilitÈs des Èquipes
+				File file = new File("./data/DisposFormateurs.csv");
+				BufferedReader buf;
+				try {
+					buf = new BufferedReader(new FileReader(file));
+					String line = buf.readLine();
+					line = buf.readLine();
 					
-					for (int j = joursDepuisDebut; j < (joursConge * NB_TRACES_JOUR); j++) {
-						model.arithm(formateurs[idFormateur][j], "=", NO_DISPONIBLE).post();
+					int id = 0;
+					ArrayList<Conge> conges = new ArrayList<Conge>();
+					
+					//RÈcuperation des donnÈes de congÈs
+					while(line != null) {
+						String[] formateur = line.split(";");
+						for (int i = 1; i < formateur.length; i = i+2) {
+							if(formateur[i].length() > 0) {
+								Conge conge = new Conge(id, formateur[i], formateur[i+1]);
+								conges.add(conge);
+							}
+						}
+						id++;
+						line = buf.readLine();
 					}
 					
+					//Traitement des dates
+					DateTimeFormatter formatterDateTime = DateTimeFormatter.ofPattern("dd/MM/yy");
+					DateTimeFormatter formatterStartDate = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+					
+					//Dates du planning
+					LocalDate startDate = LocalDate.parse(START_DATE, formatterStartDate);
+					LocalDate endDate = startDate.plusDays(NB_JOURS);
+					
+					for (int i = 0; i < conges.size(); i++) {
+						Conge conge = conges.get(i);
+						int idFormateur = conge.getFormateur();
+						
+						LocalDate dateDebutConges = LocalDate.parse(conge.getDateDebut(), formatterDateTime);
+						LocalDate dateFinConges = LocalDate.parse(conge.getDateFin(), formatterDateTime);
+						
+						if(dateFinConges.isAfter(dateDebutConges) && dateDebutConges.isAfter(startDate) && dateFinConges.isBefore(endDate)) {
+							int joursConge = (int) ChronoUnit.DAYS.between(dateDebutConges, dateFinConges);
+							int joursDepuisDebut = (int) ChronoUnit.DAYS.between(startDate, dateDebutConges);
+							
+							for (int j = joursDepuisDebut; j < (joursConge * NB_TRACES_JOUR); j++) {
+								model.arithm(formateurs[idFormateur][j], "=", NO_DISPONIBLE).post();
+							}
+							
+						}
+					}
+					
+				} catch (Exception e) {
+					e.printStackTrace();
 				}
-			}
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 	}
 	
 	public void contraintes() {
-		
-		
 		// Contrainte # 1 :
 		// Contrainte pour assurer que quand il y a une formation il y a bien une
 		// equipe, une salle et un formatteur
 		for (int i = 0; i < equipes[0].length; i++) {
 			for (int j = 0; j < formations.length; j++) {
 				int max = (int) Math.ceil(formations[j][2]);
-				IntVar count = model.intVar("count_eq_for_"+i+"_"+j, 0, max, false);
+				IntVar count = model.intVar("count_eq_for_"+i+"_"+j,0, max);
 				
 				IntVar[] columnEquipe = getColumn(equipes, i);
 				IntVar[] columnFormateur = getColumn(formateurs, i);
@@ -389,7 +389,6 @@ public class EDF {
 				model.count((int) formations[j][0], columnEquipe, count).post();
 				model.count((int) formations[j][0], columnFormateur, count).post();
 				model.count((int) formations[j][0], columnSalle, count).post();
-
 			}
 		}
 		
@@ -438,28 +437,47 @@ public class EDF {
 		return tracesJour;
 	}
 	
-	
 	public void go() {
-		IntVar[] varEquipes = new IntVar[NB_TRACES_JOUR * NB_JOURS * NB_EQUIPES];
+		IntVar[] varTotales = new IntVar[NB_TRACES_JOUR * NB_JOURS * NB_EQUIPES+NB_TRACES_JOUR * NB_JOURS * NB_FORMATEURS+NB_TRACES_JOUR * NB_JOURS * NB_SALLES];
 		int c = 0;
 		for (int j = 0; j < equipes[0].length; j++) {
 			for (int i = 0; i < equipes.length; i++) {
-				varEquipes[c] = equipes[i][j];
+				varTotales[c] = equipes[i][j];
 				c++;
 			}
 		}
+		
+		for (int j = 0; j < formateurs[0].length; j++) {
+			for (int i = 0; i < formateurs.length; i++) {
+				varTotales[c] = formateurs[i][j];
+				c++;
+			}
+		}
+		
 		// Il faut qu'on determine dans quel ordre il faut brancher dessus et por ejmemplo comenzar por las columnas y no por las filas
-		solver.setSearch(activityBasedSearch(varEquipes));
-//		solver.setSearch(Search.domOverWDegSearch(varEquipes));
 		solver.showSolutions(); 
 		solver.findSolution();
-		solver.printStatistics();	
+		solver.printStatistics();
 	}
 	
 	public static void main(String[] args) {
 		try {
 			EDF edf = new EDF();
 			edf.go();
+			
+//			for(int i=0;i<edf.formations.length;i++) {
+//				for(int j=0;j<edf.formations[0].length;j++) {
+//					System.out.print(edf.formations[i][j]+" ");
+//				}
+//				System.out.println();
+//			}
+			
+			System.out.println(edf.equipes[6][489]+"  ");
+			
+			for(int i=0;i<edf.formateurs.length;i++) {
+					System.out.println(edf.formateurs[i][489]+"  ");
+			}
+			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
