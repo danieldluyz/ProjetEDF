@@ -3,6 +3,7 @@ package edf;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -18,6 +19,14 @@ import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.util.tools.ArrayUtils;
 
 import static org.chocosolver.solver.search.strategy.Search.activityBasedSearch;
+
+import jxl.Workbook;
+import jxl.read.biff.WorkbookParser;
+import jxl.write.Label;
+import jxl.write.WritableSheet;
+import jxl.write.WritableWorkbook;
+import jxl.write.WriteException;
+import jxl.write.biff.RowsExceededException;
 
 public class EDF {
 	
@@ -500,13 +509,141 @@ public class EDF {
 		writer.close();
 	}
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
+
+		EDF edf = new EDF();
+
+		edf.go();
+
+		WritableWorkbook workbook = null;
+
 		try {
-			EDF edf = new EDF();
-			edf.go();
-		} catch (Exception e) {
-			e.printStackTrace();
+
+		/* On créé un nouveau worbook et on l'ouvre en écriture */
+
+		workbook = Workbook.createWorkbook(new File("/Users/clovismonmousseau/git/ProjetEDF/data/Sortie.xls"));
+
+
+		/* On créé une nouvelle feuille (test en position 0) et on l'ouvre en écriture */
+
+		WritableSheet sheet = workbook.createSheet("test", 0); 
+
+
+		/* Creation d'un champ au format texte */
+
+		int posLigne =0;
+
+		for(int i =0; i<edf.NB_EQUIPES*3;i++){
+
+		for(int j =0; j<edf.NB_JOURS*edf.NB_TRACES_JOUR;j++){
+
+		if(i%3==0){
+
+		if(!(edf.equipes[i/3][j].isInstantiatedTo(-1)) && !(edf.equipes[i/3][j].isInstantiatedTo(0))){
+
+		Label labelFormation = new Label(i, posLigne, ""+edf.equipes[i/3][j]);
+
+		sheet.addCell(labelFormation);
+
+		posLigne++;
+
+		}
+
+		}
+
+		if(i%3==1){
+
+		if(!(edf.equipes[i/3][j].isInstantiatedTo(-1)) && !(edf.equipes[i/3][j].isInstantiatedTo(0))){
+
+		Label labelSalle = new Label(i, posLigne, ""+edf.salles[i/3][j]);
+
+		sheet.addCell(labelSalle);
+
+		posLigne++;
+
+		}
+
+		}
+
+		if(i%3==2){
+
+		if(!(edf.equipes[i/3][j].isInstantiatedTo(-1)) && !(edf.equipes[i/3][j].isInstantiatedTo(0))){
+
+		Label labelFormateur = new Label(i, posLigne, ""+edf.formateurs[i/3][j]);
+
+		sheet.addCell(labelFormateur);
+
+		posLigne++;
+
+		}
+
+		}
+
+
+		}
+
+		posLigne=0;
+
+		}
+
+
+		/* On ecrit le classeur */
+
+		workbook.write(); 
+
+
+		} 
+
+		catch (IOException e) {
+
+		e.printStackTrace();
+
+		} 
+
+		catch (RowsExceededException e) {
+
+		e.printStackTrace();
+
+		}
+
+		catch (WriteException e) {
+
+		e.printStackTrace();
+
+		}
+
+		finally {
+
+		if(workbook!=null){
+
+		/* On ferme le worbook pour libérer la mémoire */
+
+		/**/
+
+		try {
+
+		workbook.close();
+
+		} 
+
+		catch (WriteException e) {
+
+		e.printStackTrace();
+
+		} 
+
+		catch (IOException e) {
+
+		e.printStackTrace();
+
+		}
+
+		//**/
+
+		}
+
 		}
 	}
+
 
 }
