@@ -3,6 +3,7 @@ package edf;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.text.Normalizer.Form;
 import java.time.LocalDate;
@@ -438,18 +439,27 @@ public class EDF {
 	}
 	
 	public void go() {
-		IntVar[] varTotales = new IntVar[NB_TRACES_JOUR * NB_JOURS * NB_EQUIPES+NB_TRACES_JOUR * NB_JOURS * NB_FORMATEURS+NB_TRACES_JOUR * NB_JOURS * NB_SALLES];
+		int tot = NB_TRACES_JOUR * NB_JOURS * NB_EQUIPES + NB_TRACES_JOUR * NB_JOURS * NB_FORMATEURS + NB_TRACES_JOUR * NB_JOURS * NB_SALLES;
+		IntVar[] varEquipes = new IntVar[tot];
 		int c = 0;
 		for (int j = 0; j < equipes[0].length; j++) {
 			for (int i = 0; i < equipes.length; i++) {
-				varTotales[c] = equipes[i][j];
+				varEquipes[c] = equipes[i][j];
 				c++;
 			}
 		}
 		
 		for (int j = 0; j < formateurs[0].length; j++) {
 			for (int i = 0; i < formateurs.length; i++) {
-				varTotales[c] = formateurs[i][j];
+
+				varEquipes[c] = formateurs[i][j];
+				c++;
+			}
+		}
+		
+		for (int j = 0; j < salles[0].length; j++) {
+			for (int i = 0; i < salles.length; i++) {
+				varEquipes[c] = salles[i][j];
 				c++;
 			}
 		}
@@ -464,19 +474,33 @@ public class EDF {
 		try {
 			EDF edf = new EDF();
 			edf.go();
-			
-//			for(int i=0;i<edf.formations.length;i++) {
-//				for(int j=0;j<edf.formations[0].length;j++) {
-//					System.out.print(edf.formations[i][j]+" ");
-//				}
-//				System.out.println();
-//			}
-			
-			System.out.println(edf.equipes[6][489]+"  ");
+			PrintWriter writer = new PrintWriter("./data/solutionFormateurs.txt", "UTF-8");
 			
 			for(int i=0;i<edf.formateurs.length;i++) {
-					System.out.println(edf.formateurs[i][489]+"  ");
+				for (int j = 0; j < edf.formateurs[i].length; j++) {
+					writer.println(edf.formateurs[i][j]+"  ");
+				}
 			}
+			
+			writer.close();
+			writer = new PrintWriter("./data/solutionEquipes.txt", "UTF-8");
+			
+			for(int i=0;i<edf.equipes.length;i++) {
+				for (int j = 0; j < edf.equipes[i].length; j++) {
+					writer.println(edf.equipes[i][j]+"  ");
+				}
+			}
+			
+			writer.close();
+			writer = new PrintWriter("./data/solutionSalles.txt", "UTF-8");	
+			
+			for(int i=0;i<edf.salles.length;i++) {
+				for (int j = 0; j < edf.salles[i].length; j++) {
+					writer.println(edf.salles[i][j]+"  ");
+				}
+			}
+			
+			writer.close();
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
