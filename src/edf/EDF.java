@@ -29,7 +29,7 @@ public class EDF {
 	// DONNÉES :
 	
 	/** La date de début du planning en format dd/mm/yyyy */
-	private static final String START_DATE = "01/09/2017";
+	private static final String START_DATE = "04/09/2017";
 	
 	/** Le nombre d'équipes */
 	private static final int NB_EQUIPES = 14;
@@ -49,8 +49,7 @@ public class EDF {
 	
 	/** Le nombre de jours à planifier */
 
-	private static final int NB_JOURS = 100;
-
+	private static final int NB_JOURS = 147;
 	
 	/** 
 	 * Cette matrice comporte la liste de formations
@@ -141,27 +140,29 @@ public class EDF {
 		lireContraintesSalles();
 		lireDsiponibilitesFormateurs();
 		contraintes();
-		
 	}
 	
-	public void lireDisponibilitesEquipes() {
+	public void lireDisponibilitesEquipes() throws Exception {
 		
 		// Lecture des disponibilités des équipes
 		File file = new File("./data/DisposEquipes.csv");
 		BufferedReader buf;
-		try {
-			buf = new BufferedReader(new FileReader(file));
-			String line = buf.readLine();
-			line = buf.readLine();
+		buf = new BufferedReader(new FileReader(file));
+		String line = buf.readLine();
+		line = buf.readLine();
+		
+		int equipe = 0;
+		
+		while(line != null) {
+			String[] team = line.split(";");
+			Integer[] teamAvailability = new Integer[NB_JOURS];
 			
-			int equipe = 0;
-			
-			while(line != null) {
-				String[] team = line.split(";");
-				Integer[] teamAvailability = new Integer[team.length-1];
-				
+			if(team.length < NB_JOURS) {
+				buf.close();
+				throw new Exception("Les disponibilités des équipes ne sont pas complètes pour la période à planifier : "+NB_JOURS+" jours à partir du "+START_DATE);
+			} else {
 				// On trouve les dispos d'une équipe
-				for (int i = 0; i < team.length-1; i++) {
+				for (int i = 0; i < teamAvailability.length; i++) {
 					if(team[i+1].equals("J")) teamAvailability[i] = 0;
 					else {
 						teamAvailability[i] = 1;
@@ -185,10 +186,8 @@ public class EDF {
 				equipe++;
 				line = buf.readLine();
 			}
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
+		buf.close();
 	}
 	
 	public void lireBesoinsEquipes() {
@@ -253,6 +252,7 @@ public class EDF {
 	}
 	
 	public void lireContraintesSalles() {
+		// Contrainte # 5 : Toutes les salles ne possèdent pas l'équipement nécessaire pour toutes les formations
 		// Lecture des disponibilités des équipes
 		File file = new File("./data/Salles-formations.csv");
 		BufferedReader buf;
@@ -263,7 +263,7 @@ public class EDF {
 			line = buf.readLine();
 			int jj=0;
 			while(line != null) {
-				String[] aux=line.split(",");
+				String[] aux=line.split(";");
 				for(int i=1;i<aux.length;i++) {
 					sf[jj][i-1]=Integer.parseInt(aux[i])*(jj+1);
 				}
@@ -315,6 +315,7 @@ public class EDF {
 	}
 	
 	public void lireDsiponibilitesFormateurs() {
+		// Contrainte # 6 : Les formateurs ne sont pas disponibles pendant les périodes de congés
 		// Lecture des disponibilit�s des �quipes
 				File file = new File("./data/DisposFormateurs.csv");
 				BufferedReader buf;
@@ -402,18 +403,18 @@ public class EDF {
 		
 		
 		// Contrainte # 3 :
-		// Contrainte pour assurer que le nombre maximum des traces de chaque formation soit respecte
+		// Contrainte pour assurer que le nombre maximum des traces de chaque formation soit respecté
 		for (int i = 0; i < equipes.length; i++) {
 			for (int j = 0; j < NB_JOURS; j++) {
-					for(int k=0;k<formations.length;k++) {
-						IntVar cFormJour= model.intVar("CFormJour"+k+"--"+j, 0, NB_TRACES_JOUR);
-						
-						model.count((int)formations[k][0], getTracesJour(equipes[i], j), cFormJour).post();
-						model.arithm(cFormJour, "<=", (int)formations[k][2]).post();
-					}
+				for(int k= 0;k < formations.length;k++) {
+					IntVar cFormJour= model.intVar("CFormJour"+k+"--"+j, 0, NB_TRACES_JOUR);
+					
+					model.count((int)formations[k][0], getTracesJour(equipes[i], j), cFormJour).post();
+					model.arithm(cFormJour, "<=", (int)formations[k][2]).post();
+			
+				}
 			}
 		}
-		
 	}
 	
 	public IntVar[] getColumn(IntVar[][] matrix, int j) {		
@@ -435,14 +436,13 @@ public class EDF {
 		return tracesJour;
 	}
 	
-	
 	public void go() throws Exception {
 		int tot = NB_TRACES_JOUR * NB_JOURS * NB_EQUIPES + NB_TRACES_JOUR * NB_JOURS * NB_FORMATEURS + NB_TRACES_JOUR * NB_JOURS * NB_SALLES;
-		IntVar[] varEquipes = new IntVar[tot];
+		IntVar[] vars = new IntVar[tot];
 		int c = 0;
 		for (int j = 0; j < equipes[0].length; j++) {
 			for (int i = 0; i < equipes.length; i++) {
-				varEquipes[c] = equipes[i][j];
+				vars[c] = equipes[i][j];
 				c++;
 			}
 		}
@@ -450,19 +450,61 @@ public class EDF {
 		for (int j = 0; j < formateurs[0].length; j++) {
 			for (int i = 0; i < formateurs.length; i++) {
 
-				varEquipes[c] = formateurs[i][j];
+				vars[c] = formateurs[i][j];
 				c++;
 			}
 		}
 		
 		for (int j = 0; j < salles[0].length; j++) {
 			for (int i = 0; i < salles.length; i++) {
-				varEquipes[c] = salles[i][j];
+				vars[c] = salles[i][j];
 				c++;
 			}
 		}
 		
-		solver.setSearch(activityBasedSearch(varEquipes));
+		solver.setSearch(activityBasedSearch(vars));
+		solver.showSolutions(); 
+		solver.findSolution();
+		solver.printStatistics();
+		
+		printSolution();
+	}
+	
+	public void go2() throws Exception {
+		int jours = NB_JOURS;
+		int tot = NB_TRACES_JOUR * jours * NB_EQUIPES + NB_TRACES_JOUR * jours * NB_FORMATEURS + NB_TRACES_JOUR * jours * NB_SALLES;
+		IntVar[] vars = new IntVar[tot];
+		int c = 0;
+		int jour = 0;
+		while(jour < jours) {
+			for (int j = 0; j < equipes.length; j++) {
+				IntVar[] equipe = getTracesJour(equipes[j], jour);
+				for (int i = 0; i < equipe.length; i++) {
+					vars[c] = equipe[i];
+					c++;
+				}
+			}
+			
+			for (int j = 0; j < formateurs.length; j++) {
+				IntVar[] formateur = getTracesJour(formateurs[j], jour);
+				for (int i = 0; i < formateur.length; i++) {
+					vars[c] = formateur[i];
+					c++;
+				}
+			}
+			
+			for (int j = 0; j < salles.length; j++) {
+				IntVar[] salle = getTracesJour(salles[j], jour);
+				for (int i = 0; i < salle.length; i++) {
+					vars[c] = salle[i];
+					c++;
+				}
+			}
+			
+			jour++;
+		}
+		
+		solver.setSearch(activityBasedSearch(vars));
 		solver.showSolutions(); 
 		solver.findSolution();
 		solver.printStatistics();
@@ -471,29 +513,29 @@ public class EDF {
 	}
 	
 	public void printSolution() throws Exception {
-		PrintWriter writer = new PrintWriter("./data/solutionFormateurs.txt", "UTF-8");
+		PrintWriter writer = new PrintWriter("./data/solutionFormateursCycle2.txt", "UTF-8");
 		
 		for(int i=0;i < formateurs.length;i++) {
 			for (int j = 0; j < formateurs[i].length; j++) {
-				writer.println(formateurs[i][j]+"  ");
+				if(formateurs[i][j].getValue() != NO_DISPONIBLE && formateurs[i][j].getValue() != 0) writer.println(formateurs[i][j]+"  ");
 			}
 		}
 		
 		writer.close();
-		writer = new PrintWriter("./data/solutionEquipes.txt", "UTF-8");
+		writer = new PrintWriter("./data/solutionEquipesCycle2.txt", "UTF-8");
 		
 		for(int i=0;i < equipes.length;i++) {
 			for (int j = 0; j < equipes[i].length; j++) {
-				writer.println(equipes[i][j]+"  ");
+				if(equipes[i][j].getValue() != NO_DISPONIBLE && equipes[i][j].getValue() != 0) writer.println(equipes[i][j]+"  ");
 			}
 		}
 		
 		writer.close();
-		writer = new PrintWriter("./data/solutionSalles.txt", "UTF-8");	
+		writer = new PrintWriter("./data/solutionSallesCycle2.txt", "UTF-8");	
 		
 		for(int i=0;i < salles.length;i++) {
 			for (int j = 0; j < salles[i].length; j++) {
-				writer.println(salles[i][j]+"  ");
+				if(salles[i][j].getValue() != NO_DISPONIBLE && salles[i][j].getValue() != 0) writer.println(salles[i][j]+"  ");
 			}
 		}
 		
