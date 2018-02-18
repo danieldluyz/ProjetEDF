@@ -254,9 +254,6 @@ public class EDF {
 		for (int i = 0; i < journeesTravailleesFormateurs.length; i++) {
 			journeesTravailleesFormateurs[i] = model.intVar("Journées travaillées par la formateur "+i+1, 0, NB_MAX_TRAVAIL_FORMATEUR);
 		}
-		minJourneesTravaillees = model.intVar("Min de journees travaillees par un formateur", 0, NB_MAX_TRAVAIL_FORMATEUR);
-		maxJourneesTravaillees = model.intVar("Min de journees travaillees par un formateur", 0, NB_MAX_TRAVAIL_FORMATEUR);
-		
 		for(int i=0; i < formateurs.length; i++) {
 			BoolVar[] joursFormateur = model.boolVarArray(NB_JOURS);
 			for(int j=0; j < NB_JOURS; j++) {
@@ -266,11 +263,14 @@ public class EDF {
 			model.sum(joursFormateur,"<=", NB_MAX_TRAVAIL_FORMATEUR).post();
 			model.sum(joursFormateur, "=", journeesTravailleesFormateurs[i]).post();
 		}
+		//Contrainte # 5:
+		//Contrainte pour assurer que la charge est assez repartie entre les formateurs
+		minJourneesTravaillees = model.intVar("Min de journees travaillees par un formateur", 0, NB_MAX_TRAVAIL_FORMATEUR);
+		maxJourneesTravaillees = model.intVar("Min de journees travaillees par un formateur", 0, NB_MAX_TRAVAIL_FORMATEUR);
+		
 		model.min(minJourneesTravaillees, journeesTravailleesFormateurs).post();
 		model.max(maxJourneesTravaillees, journeesTravailleesFormateurs).post();
 		
-		//Contrainte # 5:
-		//Contrainte pour assurer que la charge est assez repartie entre les formateurs
 		model.distance(minJourneesTravaillees, maxJourneesTravaillees, "<", NB_MAX_DIF_ENTRE_FORMS).post();
 	}
 	
