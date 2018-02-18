@@ -14,13 +14,10 @@ import java.util.Date;
 
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solver;
-import org.chocosolver.solver.search.limits.FailCounter;
 import org.chocosolver.solver.search.strategy.Search;
 import org.chocosolver.solver.variables.BoolVar;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.util.tools.ArrayUtils;
-
-import static org.chocosolver.solver.search.strategy.Search.activityBasedSearch;
 
 public class EDF {
 	
@@ -62,7 +59,7 @@ public class EDF {
 	private static final int NB_MAX_TRAVAIL_FORMATEUR = 100;
 	
 	/** La différence max. de journées travaillées entre le formateur qui travaille le plus et le moins */
-	private static final int NB_MAX_DIF_ENTRE_FORMS = 2;
+	private static final int NB_MAX_DIF_ENTRE_FORMS = 100;
 	
 	/** 
 	 * Cette matrice comporte la liste de formations
@@ -192,7 +189,8 @@ public class EDF {
 		contrainteRespectBesoinsEquipes();
 		maxTraceParJourDuneFormation();
 		contraintesRHFormateurs();
-		contrainteFormationsContigues();
+		//contrainteFormationsContigues();
+		reduirutilisationtraces1et5();
 	}
 	
 	public void contrainteLiaisonEquipeFormSalle() {
@@ -354,6 +352,40 @@ public class EDF {
 		}
 		*/
 		
+	}
+	public void reduirutilisationtraces1et5() {
+		//Contrainte # 8:
+		//Contrainte pour reduir l'utilisation des traces 1 et 5 
+		IntVar [] cde=new IntVar[NB_EQUIPES];
+		for (int i = 0; i < equipes.length; i++) {
+			IntVar [] aux=getTraces1et5(equipes[i]);
+			IntVar c1=model.intVar(0, NB_JOURS*2);
+			model.count(PAS_DE_COURS, aux, c1).post();
+			cde[i]=c1;
+		}
+		IntVar sum= model.intVar(0, NB_JOURS*2*NB_EQUIPES);
+		model.sum(cde, "=", sum).post();
+		model.setObjective(true, sum);
+	}
+	
+	public IntVar[] getTraces1et5(IntVar[] e) {
+		IntVar [] resp= new IntVar[NB_JOURS*2];
+		boolean m=false;
+		int c=0;
+		for (int i = 0; i < e.length; i++) {
+			if(!m) {
+				resp[c]=e[i];
+				c++;
+				i=i+3;
+				m=true;
+			}
+			else {
+				resp[c]=e[i];
+				c++;
+				m=false;
+			}
+		}
+		return resp;
 	}
 	
 	/** 
@@ -687,9 +719,6 @@ public class EDF {
 				c++;
 			}
 		}
-		
-//		solver.setSearch(Search.domOverWDegSearch(vars));
-//		solver.setLubyRestart(500, new FailCounter(model, 100), 5000);
 		solver.setSearch(Search.activityBasedSearch(vars));
 		solver.showSolutions(); 
 		solver.showShortStatistics();
