@@ -292,7 +292,7 @@ public class EDF {
 				IntVar[] tracesSemaine = getTracesSemaine(equipes[i], s);
 				
 				for (int j = 0; j < NB_FORMATIONS; j++) {
-					int maxBesoin = 5;
+					int maxBesoin = NB_TRACES_JOUR;
 					IntVar count = model.intVar(0, maxBesoin);
 					model.count(j+1, tracesSemaine, count).post();
 					
@@ -354,7 +354,7 @@ public class EDF {
 		
 	}
 	public void reduirutilisationtraces1et5() {
-		//Contrainte # 8:
+		//Contrainte # 11:
 		//Contrainte pour reduir l'utilisation des traces 1 et 5 
 		IntVar [] cde=new IntVar[NB_EQUIPES];
 		for (int i = 0; i < equipes.length; i++) {
