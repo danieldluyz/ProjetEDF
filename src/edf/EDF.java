@@ -346,7 +346,7 @@ public class EDF {
 		
 	}
 	public void reduirutilisationtraces1et5() {
-		//Contrainte # 11:
+		//Contrainte # 8:
 		//Contrainte pour reduir l'utilisation des traces 1 et 5 
 		IntVar [] cde=new IntVar[NB_EQUIPES];
 		for (int i = 0; i < equipes.length; i++) {
@@ -413,7 +413,7 @@ public class EDF {
 					}
 				}
 				
-				// Contrainte # 8 : Les indisponibilités sont fixées à la valeur de la constante "NO_DISPONIBLE"
+				// Contrainte # 9 : Les indisponibilités sont fixées à la valeur de la constante "NO_DISPONIBLE"
 				if(equipe < NB_EQUIPES) {
 					for (int j = 0; j < NB_JOURS; j++) {
 						if(teamAvailability[j] == 0) {
@@ -496,7 +496,7 @@ public class EDF {
 	}
 	
 	public void lireContraintesSalles() {
-		// Contrainte # 9 : Toutes les salles ne possèdent pas l'équipement nécessaire pour toutes les formations
+		// Contrainte # 10 : Toutes les salles ne possèdent pas l'équipement nécessaire pour toutes les formations
 		// Lecture des disponibilités des équipes
 		File file = new File("./data/Salles-formations.csv");
 		BufferedReader buf;
@@ -561,7 +561,7 @@ public class EDF {
 	}
 	
 	public void lireDsiponibilitesFormateurs() {
-		// Contrainte # 10 : Les formateurs ne sont pas disponibles pendant les périodes de congés
+		// Contrainte # 11 : Les formateurs ne sont pas disponibles pendant les périodes de congés
 		// Lecture des disponibilit�s des �quipes
 				File file = new File("./data/DisposFormateurs.csv");
 				BufferedReader buf;
