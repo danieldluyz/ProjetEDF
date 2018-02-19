@@ -14,7 +14,6 @@ import java.util.Date;
 
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Solver;
-import org.chocosolver.solver.constraints.Constraint;
 import org.chocosolver.solver.search.strategy.Search;
 import org.chocosolver.solver.variables.BoolVar;
 import org.chocosolver.solver.variables.IntVar;
@@ -48,7 +47,7 @@ public class EDF {
 	private static final int NB_SALLES = 17;
 	
 	/** Le nombre de traces disponibles par jour */
-	private static final int NB_TRACES_JOUR = 5;
+	private static final int NB_TRACES_JOUR = 3;
 	
 	/** Le nombre de jours à planifier */
 	private static final int NB_JOURS = 90;
@@ -57,10 +56,10 @@ public class EDF {
 	private static final int NB_SEMAINES = Math.floorDiv(NB_JOURS, 7);
 	
 	/** Le nombre de jours maximum qu'un formateur peut travailler par an */
-	private static final int NB_MAX_TRAVAIL_FORMATEUR = 100;
+	private static final int NB_MAX_TRAVAIL_FORMATEUR = 30;
 	
 	/** La différence max. de journées travaillées entre le formateur qui travaille le plus et le moins */
-	private static final int NB_MAX_DIF_ENTRE_FORMS = 100;
+	private static final int NB_MAX_DIF_ENTRE_FORMS = 3;
 	
 	/** 
 	 * Cette matrice comporte la liste de formations
@@ -103,7 +102,7 @@ public class EDF {
 	
 	//private BoolVar[] joursFormateur;
 	
-	private ArrayList<IntVar[][]> formationsTraces;
+	private ArrayList<BoolVar[][]> formationsTraces;
 	
 	// VARIABLES CHOCO
 	
@@ -129,7 +128,7 @@ public class EDF {
 		formateurs = new IntVar[NB_FORMATEURS][tracesTot];
 		salles = new IntVar[NB_SALLES][tracesTot];
 		formationsSemaines = new ArrayList<BoolVar[][]>();
-		formationsTraces = new ArrayList<IntVar[][]>();
+		formationsTraces = new ArrayList<BoolVar[][]>();
 		
 		for (int i = 0; i < NB_EQUIPES; i++) {
 			BoolVar[][] formationsSemainesEquipe = new BoolVar[NB_FORMATIONS][NB_SEMAINES];
@@ -137,7 +136,7 @@ public class EDF {
 		}
 		
 		for (int i = 0; i < NB_EQUIPES; i++) {
-			IntVar[][] formationsTraceEquipe = new IntVar[NB_FORMATIONS][NB_TRACES_JOUR];
+			BoolVar[][] formationsTraceEquipe = new BoolVar[NB_FORMATIONS][NB_TRACES_JOUR];
 			formationsTraces.add(formationsTraceEquipe);
 		}
 		
@@ -306,17 +305,16 @@ public class EDF {
 			}
 		}
 		
-		
 		//Contrainte # 7:
 		//Contrainte pour assurer qu'une formation est faite toujours sur une même trace
 		for (int i = 0; i < formationsTraces.size(); i++) {
-			IntVar[][] formationsTracesEquipe = formationsTraces.get(i);
+			BoolVar[][] formationsTracesEquipe = formationsTraces.get(i);
 			for (int j = 0; j < formationsTracesEquipe.length; j++) {
 				for (int k = 0; k < formationsTracesEquipe[0].length; k++) {
 					int e = i+1;
 					int f = j+1;
 					int t = k+1;
-					formationsTracesEquipe[j][k] = model.intVar("Equipe : "+e+" - Formation : "+f+" - Trace : "+t,0, 1);
+					formationsTracesEquipe[j][k] = model.boolVar("Equipe : "+e+" - Formation : "+f+" - Trace : "+t);
 				}
 			}
 			
@@ -336,13 +334,8 @@ public class EDF {
 					IntVar compteur = model.intVar(0, 10);
 					model.count(formation, tracesHoraireEquipe, compteur).post();
 					
-					Constraint oui = model.arithm(compteur, ">", PAS_DE_COURS);
-					Constraint non = model.arithm(compteur, "=", PAS_DE_COURS);
-					
-					Constraint formationCetteTrace = model.arithm(formationsTracesEquipe[f][t], "=", 1);
-					Constraint pasDeFormationCetteTrace = model.arithm(formationsTracesEquipe[f][t], "=", 0);
-					
-					model.or(model.and(oui, formationCetteTrace), model.and(non, pasDeFormationCetteTrace)).post();
+					model.arithm(compteur, ">", PAS_DE_COURS).reifyWith(formationsTracesEquipe[f][t]);
+				
 				}
 			}
 			
@@ -350,7 +343,6 @@ public class EDF {
 				model.sum(formationsTracesEquipe[j], "<=", 3).post();
 			}
 		}
-		
 		
 	}
 	public void reduirutilisationtraces1et5() {
@@ -641,8 +633,8 @@ public class EDF {
 			}
 		}
 		else {
-			for (int i = j*5; i < j*5 + NB_TRACES_JOUR; i++) {
-				tracesJour[i-j*5] = matrix[i];
+			for (int i = j * NB_TRACES_JOUR; i < j * NB_TRACES_JOUR + NB_TRACES_JOUR; i++) {
+				tracesJour[i - j * NB_TRACES_JOUR] = matrix[i];
 			}
 		}
 		return tracesJour;
@@ -652,14 +644,14 @@ public class EDF {
 		IntVar[] traces = new IntVar[5];
 		
 		for (int i = 0; i < 5; i++) {
-			traces[i] = planning[semaine * 35 + trace + 5 * i];
+			traces[i] = planning[semaine * NB_TRACES_JOUR * 7 + trace + NB_TRACES_JOUR * i];
 		}
 		
 		return traces;
 	}
 	
 	public IntVar[] getTracesSemaine(IntVar[] planning, int semaine) {
-		IntVar[] tracesSemaine = new IntVar[25];
+		IntVar[] tracesSemaine = new IntVar[NB_TRACES_JOUR * 5];
 		
 		int k = 0;
 		for (int i = 0; i < NB_TRACES_JOUR; i++) {
@@ -678,7 +670,7 @@ public class EDF {
 	**/
 	
 	public void go() throws Exception {
-		int tot = NB_TRACES_JOUR * NB_JOURS * NB_EQUIPES + NB_TRACES_JOUR * NB_JOURS * NB_FORMATEURS + NB_TRACES_JOUR * NB_JOURS * NB_SALLES + NB_FORMATEURS + NB_EQUIPES * (NB_TRACES_JOUR * NB_FORMATIONS) + NB_EQUIPES * (NB_SEMAINES * NB_FORMATIONS);
+		int tot = NB_TRACES_JOUR * NB_JOURS * NB_EQUIPES + NB_TRACES_JOUR * NB_JOURS * NB_FORMATEURS + NB_TRACES_JOUR * NB_JOURS * NB_SALLES + NB_FORMATEURS + NB_EQUIPES * (NB_SEMAINES * NB_FORMATIONS);
 		IntVar[] vars = new IntVar[tot];
 		int c = 0;
 		
@@ -691,7 +683,7 @@ public class EDF {
 				}
 			}
 		}
-		
+		/*
 		for (int i = 0; i < formationsTraces.size(); i++) {
 			IntVar[][] f = formationsTraces.get(i);
 			for (int j = 0; j < f.length; j++) {
@@ -700,7 +692,7 @@ public class EDF {
 					c++;
 				}
 			}
-		}
+		}*/
 		
 		for (int i = 0; i < journeesTravailleesFormateurs.length; i++) {
 			vars[c] = journeesTravailleesFormateurs[i];
@@ -750,7 +742,7 @@ public class EDF {
 		}
 		
 		writer.close();
-		writer = new PrintWriter("./data/solutionEquipesCycle3.txt", "UTF-8");
+		writer = new PrintWriter("./data/solutionEquipesCycle3PMT.txt", "UTF-8");
 		
 		for(int i=0;i < equipes.length;i++) {
 			
